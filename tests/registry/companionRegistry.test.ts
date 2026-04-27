@@ -88,21 +88,21 @@ describe('CompanionRegistry', () => {
     });
   });
 
-  describe('múltiplos companions pro mesmo binário (defensive)', () => {
-    it('prefere o companion ao lado do binário', async () => {
+  describe('múltiplos companions pro mesmo binário (caso patológico)', () => {
+    it('regra é um companion por binário — last writer wins, sem tie-break', async () => {
+      // Cenário: user editou manualmente um .md random pra apontar pro mesmo binário
+      // que já tem companion. Plugin previne via "Add Binary Notes", mas aqui é manual.
       plugin.app.vault.__setFile('paper.pdf.md', { binary: 'paper.pdf' });
       plugin.app.vault.__setFile('outro/paper.pdf.md', { binary: 'paper.pdf' });
       registry.initialize();
       await plugin.app.workspace.__triggerLayoutReady();
-      expect(registry.getCompanionFor('paper.pdf')).toBe('paper.pdf.md');
-    });
-
-    it('fallback alfabético quando nenhum está ao lado', async () => {
-      plugin.app.vault.__setFile('zz/paper.pdf.md', { binary: 'paper.pdf' });
-      plugin.app.vault.__setFile('aa/paper.pdf.md', { binary: 'paper.pdf' });
-      registry.initialize();
-      await plugin.app.workspace.__triggerLayoutReady();
-      expect(registry.getCompanionFor('paper.pdf')).toBe('aa/paper.pdf.md');
+      // Ambos estão no byCompanion (apontando pro binário) — last writer wins no byBinary
+      const active = registry.getCompanionFor('paper.pdf');
+      expect(active).not.toBeNull();
+      expect(['paper.pdf.md', 'outro/paper.pdf.md']).toContain(active);
+      // Reverse lookup ainda enxerga ambos
+      expect(registry.getBinaryFor('paper.pdf.md')).toBe('paper.pdf');
+      expect(registry.getBinaryFor('outro/paper.pdf.md')).toBe('paper.pdf');
     });
   });
 

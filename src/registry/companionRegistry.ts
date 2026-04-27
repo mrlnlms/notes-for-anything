@@ -8,13 +8,21 @@ interface CompanionMeta {
   visible: boolean;
 }
 
+/**
+ * Índice reverso companion ↔ binário.
+ *
+ * Regra: **um companion por binário**. Plugin previne criação de múltiplos via
+ * "Add Binary Notes" (commands.ts checa se já existe antes de criar). Caso
+ * patológico (user editou manualmente um `.md` qualquer pra apontar pra um binário
+ * que já tem companion): last writer wins. Sem tie-break, sem candidates set, sem
+ * `resolveActive`. O `.md` "perdedor" continua existindo no vault como nota normal,
+ * mas não está registrado como companion ativo.
+ */
 export class CompanionRegistry {
-  // Map<binaryPath, CompanionMeta> — escolha já resolvida quando há múltiplos
+  // Map<binaryPath, CompanionMeta> — o companion ativo deste binário
   private byBinary = new Map<string, CompanionMeta>();
   // Map<companionPath, binaryPath> — reverse lookup
   private byCompanion = new Map<string, string>();
-  // Pra resolver tie-break: Map<binaryPath, Set<companionPath>>
-  private candidates = new Map<string, Set<string>>();
 
   private metadataCacheRef: EventRef | null = null;
   private writingInProgress = new Set<string>();
@@ -89,12 +97,6 @@ export class CompanionRegistry {
     this.byCompanion.delete(oldPath);
     this.byCompanion.set(newPath, binaryPath);
 
-    const set = this.candidates.get(binaryPath);
-    if (set) {
-      set.delete(oldPath);
-      set.add(newPath);
-    }
-
     const meta = this.byBinary.get(binaryPath);
     if (meta && meta.companionPath === oldPath) {
       this.byBinary.set(binaryPath, { ...meta, companionPath: newPath });
@@ -102,7 +104,7 @@ export class CompanionRegistry {
     this.notify(binaryPath);
   }
 
-  /** Lê o frontmatter do file e atualiza índice */
+  /** Lê o frontmatter do file e atualiza índice. Last writer wins. */
   private syncFromFrontmatter(companionPath: string): void {
     const file = this.app.vault.getAbstractFileByPath(companionPath);
     if (!(file instanceof TFile)) {
@@ -117,23 +119,22 @@ export class CompanionRegistry {
       return;
     }
 
-    // Re-vincular: se companionPath já estava ligado a outro binário, limpar
+    const visible = fm[FM_KEY_VISIBLE] === true;
+
+    // Re-vincular: se este companion estava apontando pra outro binário antes,
+    // remove a relação antiga (e desativa o byBinary se este era o ativo do antigo).
     const previousBinary = this.byCompanion.get(companionPath);
     if (previousBinary && previousBinary !== binaryPath) {
-      this.removeCandidate(previousBinary, companionPath);
+      const oldMeta = this.byBinary.get(previousBinary);
+      if (oldMeta && oldMeta.companionPath === companionPath) {
+        this.byBinary.delete(previousBinary);
+      }
+      this.notify(previousBinary);
     }
 
     this.byCompanion.set(companionPath, binaryPath);
-    this.addCandidate(binaryPath, companionPath);
-    this.resolveActive(binaryPath);
-    if (previousBinary && previousBinary !== binaryPath) {
-      this.resolveActive(previousBinary);
-    }
-
+    this.byBinary.set(binaryPath, { companionPath, visible }); // last writer wins
     this.notify(binaryPath);
-    if (previousBinary && previousBinary !== binaryPath) {
-      this.notify(previousBinary);
-    }
   }
 
   /** Chamado quando companion é deletado ou perdeu o frontmatter binary: */
@@ -141,50 +142,11 @@ export class CompanionRegistry {
     const binaryPath = this.byCompanion.get(companionPath);
     if (!binaryPath) return;
     this.byCompanion.delete(companionPath);
-    this.removeCandidate(binaryPath, companionPath);
-    this.resolveActive(binaryPath);
-    this.notify(binaryPath);
-  }
-
-  private addCandidate(binaryPath: string, companionPath: string): void {
-    let set = this.candidates.get(binaryPath);
-    if (!set) {
-      set = new Set();
-      this.candidates.set(binaryPath, set);
-    }
-    set.add(companionPath);
-  }
-
-  private removeCandidate(binaryPath: string, companionPath: string): void {
-    const set = this.candidates.get(binaryPath);
-    if (!set) return;
-    set.delete(companionPath);
-    if (set.size === 0) this.candidates.delete(binaryPath);
-  }
-
-  /** Tie-break: prefere ao lado do binário, depois alfabético. Sempre re-lê visible do FM (sem shortcut hint). */
-  private resolveActive(binaryPath: string): void {
-    const set = this.candidates.get(binaryPath);
-    if (!set || set.size === 0) {
+    const meta = this.byBinary.get(binaryPath);
+    if (meta && meta.companionPath === companionPath) {
       this.byBinary.delete(binaryPath);
-      return;
     }
-    const expected = `${binaryPath}.md`;
-    let chosen: string;
-    if (set.has(expected)) {
-      chosen = expected;
-    } else {
-      chosen = [...set].sort()[0];
-    }
-
-    let visible = false;
-    const file = this.app.vault.getAbstractFileByPath(chosen);
-    if (file instanceof TFile) {
-      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
-      visible = fm[FM_KEY_VISIBLE] === true;
-    }
-
-    this.byBinary.set(binaryPath, { companionPath: chosen, visible });
+    this.notify(binaryPath);
   }
 
   private notify(binaryPath: string): void {

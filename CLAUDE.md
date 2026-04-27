@@ -18,7 +18,7 @@ A spec original (`docs/superpowers/specs/2026-04-27-binary-notes-design.md`) des
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `src/registry/companionRegistry.ts` | Map dual-source companion↔binário em memória, reativo a `metadataCache.changed`. Tie-break determinístico (ao lado > alfabético). `writingInProgress` set anti-feedback-loop. Adaptado do `caseVariablesRegistry` do Qualia |
+| `src/registry/companionRegistry.ts` | Map dual-source companion↔binário em memória, reativo a `metadataCache.changed`. **Regra: um companion por binário** (plugin previne na criação via commands.ts). Caso patológico de múltiplos `.md` apontando pro mesmo binário: last writer wins, sem tie-break. `writingInProgress` set anti-feedback-loop. Adaptado do `caseVariablesRegistry` do Qualia |
 | `src/lifecycle/vaultLifecycleHandler.ts` | `vault.on('rename')` propaga novo path pro `binary:` no companion via `processFrontMatter`. `vault.on('delete')` cascateia binário→companion |
 | `src/intercept/clickInterceptor.ts` | Capture phase click handler no explorer. Click no binário com companion → `leaf.openFile(companionFile)` (abre `.md` como MarkdownView) |
 | `src/intercept/viewSwapper.ts` | Fallback pra abertura fora do explorer (drag/drop, comando externo, wikilink). Exporta `swapBypass: WeakSet<WorkspaceLeaf>` pra outros módulos sinalizarem "não swap esse leaf" — usado pelo header action button |
@@ -38,7 +38,7 @@ A spec original (`docs/superpowers/specs/2026-04-27-binary-notes-design.md`) des
 
 - **Path no `binary:`**: absolute desde vault root, sempre **double-quoted** (`binary: "path/to/file.pdf"`) — preserva whitespace múltiplo e chars especiais YAML
 - **Convenção de nome do companion side-by-side**: `<basename>.<ext>.md` (ex.: `paper.pdf.md`)
-- **Cardinalidade**: um companion por binário; defensive fallback se houver múltiplos (ao lado > alfabético, silencioso)
+- **Cardinalidade**: **um companion por binário, regra estrita.** Plugin previne criação de segundo. Caso patológico (user editou manualmente): last writer wins, sem tie-break. O `.md` "perdedor" continua existindo no vault mas não é o ativo — não há lógica especial pra resolver isso, é responsabilidade do user limpar
 - **Coexistência**: sempre intercepta. Source toggle delega ao viewer default registrado (PDF++ se instalado)
 - **Companion abre como MarkdownView nativa** — Properties, body, backlinks, tags, tudo Obsidian-native
 - **Body do companion não tem template embed automático** — user controla o body inteiro

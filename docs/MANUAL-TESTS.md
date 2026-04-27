@@ -71,7 +71,9 @@ Em cada caminho:
 - [ ] "Add Binary Notes" → companion criado com `binary: "..."` quoted preservando espaços
 - [ ] Click no binário abre o `.md` companion sem erro "Binary not found"
 
-### S12 — Sync conflict / múltiplos companions defensivo
-- [ ] Criar manualmente um segundo `.md` em outra pasta com `binary: "paper.pdf"` (apontando pro mesmo binário)
-- [ ] Click em `paper.pdf` → registry escolhe silenciosamente o companion **ao lado do binário** (preferência alphabetical fallback se nenhum estiver ao lado)
-- [ ] Sem warning ruidoso
+### S12 — Caso patológico: múltiplos `.md` apontando pro mesmo binário
+Regra: **um companion por binário**. Plugin previne via "Add Binary Notes". Caso o user edite manualmente um `.md` random pra ter `binary: paper.pdf` enquanto já existe `paper.pdf.md`:
+- [ ] Last writer wins — o `.md` cuja sincronização foi mais recente vira o ativo
+- [ ] Sem warning ruidoso, sem tie-break — comportamento determinístico apenas pelo timing
+- [ ] Click em `paper.pdf` abre o ativo. O `.md` "perdedor" continua existindo no vault como nota normal apontando pro mesmo binário, mas não é o que abre via click
+- [ ] Rename/delete do binário só afeta o ativo. Companion não-ativo fica órfão (responsabilidade do user limpar)
