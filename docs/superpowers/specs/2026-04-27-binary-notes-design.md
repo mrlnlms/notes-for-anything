@@ -1,8 +1,14 @@
 # Binary Notes — Design Spec
 
 **Data:** 2026-04-27
-**Status:** validado, aguardando spec review
+**Status:** **HISTÓRICO — refatorado em 2026-04-27 após testes manuais**
 **Discovery base:** `docs/01-discovery-binary-companion.md`
+
+> **⚠️ Nota de refator:** este spec descreve uma `ItemView` custom (`BinaryNotesView`) que renderiza embed + body via `MarkdownRenderer`. Esse desenho **não foi adiante**: testes manuais mostraram que `MarkdownRenderer.render` não renderiza Properties como componente nativo, e a custom view re-implementaria recursos que o Obsidian já dá de graça em `MarkdownView` (Properties editáveis, backlinks, tags, edit mode).
+>
+> **Implementação atual** (commit `65061e8` em diante): companion abre como `MarkdownView` nativa via `leaf.openFile`. Header actions bidirecionais (`companionHeaderActions.ts`) injetam botão "Open binary in viewer" no `.md` e "Open companion notes" no binário. `BinaryNotesView` e `headerActions` originais ficam órfãos.
+>
+> Pra arquitetura corrente, ver `CLAUDE.md` na raiz do plugin. Este spec fica como histórico de design.
 
 ---
 

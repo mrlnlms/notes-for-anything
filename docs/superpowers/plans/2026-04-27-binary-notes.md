@@ -1,5 +1,12 @@
 # Binary Notes Implementation Plan
 
+> **⚠️ HISTÓRICO — plano original.** Foi executado integralmente (Tasks 1-18, ~19 commits), mas após testes manuais o desenho da `BinaryNotesView` custom foi descartado em favor de `MarkdownView` nativa do Obsidian. Ver `CLAUDE.md` na raiz pra arquitetura corrente.
+>
+> Tasks que sobrevivem ao refator: registry, lifecycle, click intercept, view swapper, explorer decorator, settings, commands, mock infra, testes (61 deles).
+> Tasks revisadas/substituídas: `BinaryNotesView` custom + `headerActions` originais → órfãos; substituídos por `companionHeaderActions.ts` que adiciona botão bidirecional na MarkdownView nativa e no viewer do binário.
+>
+> Pra agentes que forem trabalhar no plugin: leiam `CLAUDE.md` primeiro. Esse plano fica como histórico de execução.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implementar o plugin Obsidian Binary Notes — promoção opt-in de binários (PDF, image, audio, video) a cidadãos de primeira via sidecar `.md` companion + custom view embedando binário e nota.

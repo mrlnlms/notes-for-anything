@@ -1,10 +1,12 @@
-# Discovery — Binary Companion (working title)
+# Discovery — Binary Notes
 
 > Registro da primeira sessão de discussão sobre a ideia. Documento de discovery, não spec. Captura tese, decisões tomadas, decisões em aberto, panorama técnico e histórico relevante. Serve de ponto de partida pra próxima sessão.
+>
+> **Atualização 2026-04-27:** nome final escolhido = **Binary Notes** (após brainstorm). Plugin foi implementado, refatorado e está rodando — ver `CLAUDE.md` na raiz pra arquitetura atual. Esse discovery doc fica como registro do raciocínio inicial.
 
 **Data:** 2026-04-26
-**Diretório do plugin (working):** `obsidian-binary-props`
-**Nome do plugin:** ainda em aberto (Binary Props, PDF Companion, Binary Companion são working titles)
+**Diretório do plugin:** `obsidian-binary-props` (legado do working title)
+**Nome final:** Binary Notes
 
 ---
 

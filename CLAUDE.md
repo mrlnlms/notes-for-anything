@@ -4,59 +4,82 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status atual
 
-Projeto em **fase de discovery — ainda não há código**. O único conteúdo é `docs/01-discovery-binary-companion.md`, que é a fonte da verdade sobre tese, decisões tomadas, panorama técnico e plano. Sempre leia esse doc antes de propor qualquer coisa estrutural.
-
-Working title do plugin: **Binary Companion** (vs `Binary Props` — decisão em aberto). Diretório fixo: `obsidian-binary-props`.
+Plugin Obsidian **Binary Notes** funcional, primeira versão rodando. Plugin ID: `binary-notes`. Diretório do plugin: `obsidian-binary-props/` (legado do working title antigo). 61/61 testes passing, build clean.
 
 ## Tese em uma linha
 
-> Binário (PDF, imagem, áudio, vídeo, etc.) abre como Folder Notes abre `.md` em pastas: opt-in por arquivo, com sidecar `.md` companion, custom view embedando o binário + nota + toggle source, indicador visual no binário, companion deslocável via propriedade YAML `binary: <path>`.
+> Binário (PDF, imagem, áudio, vídeo) abre como Folder Notes abre `.md` em pastas: opt-in por arquivo, sidecar `.md` companion conectado via frontmatter `binary: <path>`, click no binário abre o companion como **MarkdownView nativa** (Properties + body editáveis), botão de toggle bidirecional no header pra ir e voltar entre `.md` e binário cru.
 
-## Decisões já tomadas (não relitigue sem motivo forte)
+## Arquitetura atual (refatorada — não é mais a do spec original)
 
-Da seção 4 do discovery — tratar como assentado:
+A spec original (`docs/superpowers/specs/2026-04-27-binary-notes-design.md`) descrevia uma `ItemView` custom com embed + body. **Foi refatorado** pra largar a custom view e usar MarkdownView nativa do Obsidian — Properties editáveis vêm de graça.
 
-- **Escopo**: qualquer binário desde o início, não só PDF
-- **Promoção**: opt-in por arquivo via comando explícito (não auto-detecção como o `binary-file-manager`)
-- **Persistência**: sidecar `.md` real do vault, não `data.json` centralizado
-- **Localização**: companion pode morar em qualquer lugar, conectado via frontmatter `binary: <path>`
-- **Visibilidade default**: companion invisível no file explorer; binário ganha underline
-- **Custom view**: uma view agnóstica única (não uma por extensão)
-- **Múltiplos companions por binário**: não suportado pela UI; modo defensivo (primeiro encontrado + warning) pra edge case de criação manual
+### Componentes vivos
 
-Decisões em aberto (seção 5): nome do plugin, convenção de nomenclatura do companion ao lado do binário, mecanismo de toggle source, bypass rápido pro binário cru, template inicial.
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/registry/companionRegistry.ts` | Map dual-source companion↔binário em memória, reativo a `metadataCache.changed`. Tie-break determinístico (ao lado > alfabético). `writingInProgress` set anti-feedback-loop. Adaptado do `caseVariablesRegistry` do Qualia |
+| `src/lifecycle/vaultLifecycleHandler.ts` | `vault.on('rename')` propaga novo path pro `binary:` no companion via `processFrontMatter`. `vault.on('delete')` cascateia binário→companion |
+| `src/intercept/clickInterceptor.ts` | Capture phase click handler no explorer. Click no binário com companion → `leaf.openFile(companionFile)` (abre `.md` como MarkdownView) |
+| `src/intercept/viewSwapper.ts` | Fallback pra abertura fora do explorer (drag/drop, comando externo, wikilink). Exporta `swapBypass: WeakSet<WorkspaceLeaf>` pra outros módulos sinalizarem "não swap esse leaf" — usado pelo header action button |
+| `src/companion/companionHeaderActions.ts` | Adiciona action no header da view ativa: dentro do `.md` companion → "Open binary in viewer"; dentro do binário viewer (com companion) → "Open companion notes". Detecta tipo via path (não `instanceof View`). Cache `WeakMap<leaf, {el, targetPath}>` invalida quando target muda |
+| `src/explorer/explorerDecorator.ts` | Underline em binários com companion + hide companions via body class. MutationObserver pra lazy render do explorer |
+| `src/commands/commands.ts` | "Add Binary Notes" (cria companion idempotente + abre como MarkdownView). "Open binary in viewer" (palette equivalente do header action). Menu de contexto no `file-menu` |
+| `src/settings/settingsTab.ts` + `src/settings/settings.ts` | Hide companions toggle + Companion template path |
+| `src/main.ts` | Wiring de tudo |
 
-## Arquitetura prevista (quando começar a implementar)
+### Componentes órfãos (refator deixou pra trás — não apagar sem confirmar)
 
-Componentes do MVP estimados em ~1.000-1.500 LOC. Os blocos críticos:
+- `src/view/binaryNotesView.ts` — a ItemView custom original (substituída por MarkdownView nativa)
+- `src/view/headerActions.ts` — header actions da view custom (substituído pelo `companionHeaderActions.ts`)
+- `BINARY_NOTES_VIEW_TYPE` em `src/constants.ts` — ainda registrado em `main.ts` pra evitar crash em workspace state restorado de versões antigas
 
-1. **Click intercept** — `registerDomEvent(document, 'click', handler, true)` em capture phase, `preventDefault()` + `stopImmediatePropagation()`. Pattern direto do Folder Notes
-2. **Substituição de view ao abrir binário** — `workspace.on('active-leaf-change')` listener, **não** `registerExtensions` (conflita com player nativo de áudio/vídeo). Pattern já resolvido em 6 engines do Qualia Coding
-3. **Custom view** — `ItemView` própria com `MarkdownRenderer` pra companion + embed nativo do binário (`![[arquivo.pdf]]`) + header com toggle source. Componente mais substantivo (~200-400 LOC)
-4. **Índice reverso binário→companion** — via `metadataCache` + listeners de `vault.on('create' | 'rename' | 'delete')`
-5. **Esconder companion** — body class toggle (`.hide-binary-companion`) + CSS cascata. Cópia direta do Folder Notes
-6. **Underline no binário** — classe CSS no item do explorer + MutationObserver pra lazy render do file explorer
+## Decisões assentadas
 
-## Precedentes a estudar antes de implementar
+- **Path no `binary:`**: absolute desde vault root, sempre **double-quoted** (`binary: "path/to/file.pdf"`) — preserva whitespace múltiplo e chars especiais YAML
+- **Convenção de nome do companion side-by-side**: `<basename>.<ext>.md` (ex.: `paper.pdf.md`)
+- **Cardinalidade**: um companion por binário; defensive fallback se houver múltiplos (ao lado > alfabético, silencioso)
+- **Coexistência**: sempre intercepta. Source toggle delega ao viewer default registrado (PDF++ se instalado)
+- **Companion abre como MarkdownView nativa** — Properties, body, backlinks, tags, tudo Obsidian-native
+- **Body do companion não tem template embed automático** — user controla o body inteiro
 
-Reuso pesado, não reinventar:
+## Comandos comuns
 
-- **Qualia Coding (próprio)** — `local-workbench/My PROJECTS/Docs & Orgs/qualia-coding/.obsidian/plugins/qualia-coding/src/`. Mecanismo inteiro de interceptação + substituição de view pra binário já está pronto em 6 engines. `docs/ARCHITECTURE.md` e `docs/TECHNICAL-PATTERNS.md` (21 gotchas) são leitura obrigatória
-- **Folder Notes (LostPaul)** — github.com/LostPaul/obsidian-folder-notes. 8 técnicas mapeadas no discovery (seção 6.2): hide via CSS body class, underline, click intercept, retry logic 5x500ms pra esperar render, MutationObserver
-- **Annotator (elias-sundqvist)** — pattern `annotation-target: <pdf-path>` no frontmatter. Predecessor mais direto do YAML linking (workflow inverso: nota → binário, em vez de binário → nota)
-- **Excalidraw (zsviczian)** — pattern de toggle binário↔source. Use o **mesmo verbo** ("Toggle between [view] and Markdown mode")
-- **Attachment Sidecar (longy2k)** — concorrente recém-lançado dez/2025, ativo. Monitorar releases a cada 2-3 meses
+```bash
+npm install        # primeira vez
+npm run dev        # esbuild watch + copy pro demo/.obsidian/plugins/binary-notes/
+npm run build      # production build (gera main.js)
+npm test           # vitest watch mode
+npm test -- --run  # single pass (CI mode) — 61 testes
+npm run lint       # eslint flat config v9
+```
 
-## Quando começar a implementar
+Hot-reload via plugin pjeby `hot-reload` instalado no demo vault — recompilou? plugin recarrega automaticamente.
 
-- Use a skill `obsidian-plugin-scaffold` pra setup inicial (esbuild 0.25, TS5, ESLint 9 flat, BRAT-ready manifest, hot-reload, demo vault, CI/CD)
-- Use a skill `superpowers:brainstorming` antes de qualquer feature substantiva, depois `superpowers:writing-plans` antes de codar
-- Pra edição CM6 (decorations, widgets, click intercept dentro do editor) e settings UI, ver as skills `obsidian-cm6`, `obsidian-core`, `obsidian-settings`, `obsidian-design`
-- Spike técnico recomendado antes do MVP completo: protótipo só de click intercept + custom view trivial pra validar que não quebra o viewer nativo
+## Precedentes reaproveitados
+
+- **Qualia Coding (próprio)** — `caseVariablesRegistry.ts` foi a base do `companionRegistry`. Patterns: `writingInProgress`, `onLayoutReady` deferred scan, `processFrontMatter`, `migrateFilePath`
+- **Folder Notes (LostPaul)** — body class hide + CSS cascata, MutationObserver com retry, click intercept capture phase
+- **Annotator (elias-sundqvist)** — pattern de YAML linking (`binary: <path>`)
+
+## Gotchas aplicáveis (Qualia `docs/TECHNICAL-PATTERNS.md`)
+
+- §8.6 — `active-leaf-change` em vez de `registerExtensions` (aplicado em `viewSwapper`)
+- §8.8 — WeakSet pra evitar double-instrumentation (`viewSwapper.swapping` + exportado `swapBypass`)
+- §19.5 — Detach manual de `view.addAction` (aplicado em `companionHeaderActions` via `WeakMap<leaf, ButtonState>`)
+- §1.12 — MutationObserver self-suppression (não aplicável aqui — `ExplorerDecorator` só lê)
+- §8.3 — `instanceof FileView` antes de operar em leaf — **aviso**: PDF/image views nem sempre extendem FileView no runtime real. `companionHeaderActions` detecta via `view.file` direto (não instanceof) por isso.
 
 ## Convenções operacionais
 
 - **Commits**: sempre via `~/.claude/scripts/commit.sh "mensagem"`. Conventional commits em pt-br (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`). Sem emoji. Sem `Co-Authored-By` (o script bloqueia)
-- **Discovery doc é canônico**: se decidir mudar uma das decisões da seção 4, atualize o discovery na mesma sessão — não deixe esse CLAUDE.md e o discovery divergirem
-- **Filosofia de coexistência com especialistas** (PDF++, Media Notes, Excalidraw, ePub Reader): o Companion é a camada de cidadania binária ("esse binário tem identidade no vault"); especialistas continuam fazendo a anotação fina dentro do domínio. Não competir, integrar
-- **Escopo do MVP é estreito**: integração com Mirror Notes, refator do Qualia pra rodar em cima do Companion — ambas tentadoras, ambas **fora** do MVP (seção 10, risco de escopo)
+- **NÃO apagar arquivos** sem autorização literal e explícita do usuário (regra global). Mesmo arquivos órfãos do refator — pedir antes
+- **Filosofia de coexistência**: Binary Notes é a camada de cidadania binária. Especialistas (PDF++, Media Notes, Excalidraw, ePub Reader) continuam fazendo a anotação fina. Não competir, integrar
+- **Manual tests** (`docs/MANUAL-TESTS.md`): rodar em vault real após mudanças significativas — mocks vitest+jsdom não pegam bugs de runtime real (PDF.js, MarkdownView, etc)
+
+## Tópicos abertos
+
+- BinaryNotesView e headerActions órfãos: remover quando confirmado que ninguém precisa
+- Embeds `![[arquivo.pdf]]` em outras notas: usam viewer nativo do Obsidian (não a custom view, que não existe mais)
+- Backlinks panel: aparece nativo no MarkdownView do companion. Se quiser unificar com backlinks do binário cru, é design dedicado
+- Coexistência específica com PDF++: bypass condicional via setting se demandar
