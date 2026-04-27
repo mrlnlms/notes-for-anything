@@ -1,1 +1,41 @@
-/* Binary Notes — styles preenchidos durante a implementação dos componentes */
+/* Binary Notes — file explorer + custom view */
+
+/* Hide companions quando body tem .hide-binary-companion */
+body.hide-binary-companion .nav-file-title.is-binary-companion {
+  display: none;
+}
+
+/* Underline em binários que têm companion */
+.nav-file-title.has-binary-companion {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--text-accent);
+  text-underline-offset: 2px;
+}
+
+/* Custom view layout */
+.binary-notes-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  padding: var(--size-4-2);
+}
+
+.binary-notes-embed {
+  width: 100%;
+  min-height: 50vh;
+}
+
+.binary-notes-embed iframe,
+.binary-notes-embed img,
+.binary-notes-embed video,
+.binary-notes-embed audio,
+.binary-notes-embed .pdf-embed {
+  width: 100%;
+  max-width: 100%;
+}
+
+.binary-notes-companion {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: var(--size-4-2);
+}
