@@ -117,8 +117,6 @@ export class CompanionRegistry {
       return;
     }
 
-    const visible = fm[FM_KEY_VISIBLE] === true;
-
     // Re-vincular: se companionPath já estava ligado a outro binário, limpar
     const previousBinary = this.byCompanion.get(companionPath);
     if (previousBinary && previousBinary !== binaryPath) {
@@ -128,7 +126,9 @@ export class CompanionRegistry {
     this.byCompanion.set(companionPath, binaryPath);
     this.addCandidate(binaryPath, companionPath);
     this.resolveActive(binaryPath);
-    void visible; // visible é resolvido dentro de resolveActive lendo FM novamente — single source of truth
+    if (previousBinary && previousBinary !== binaryPath) {
+      this.resolveActive(previousBinary);
+    }
 
     this.notify(binaryPath);
     if (previousBinary && previousBinary !== binaryPath) {

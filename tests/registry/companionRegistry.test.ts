@@ -72,6 +72,20 @@ describe('CompanionRegistry', () => {
 
       expect(registry.getCompanionFor('a.pdf')).toBeNull();
     });
+
+    it('re-vincula companion quando binary: aponta para novo binário (limpa o antigo)', async () => {
+      plugin.app.vault.__setFile('c.md', { binary: 'old.pdf' });
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+      expect(registry.getCompanionFor('old.pdf')).toBe('c.md');
+
+      plugin.app.vault.__setFile('c.md', { binary: 'new.pdf' });
+      plugin.app.metadataCache.__triggerChanged('c.md');
+
+      expect(registry.getCompanionFor('old.pdf')).toBeNull();
+      expect(registry.getCompanionFor('new.pdf')).toBe('c.md');
+      expect(registry.getBinaryFor('c.md')).toBe('new.pdf');
+    });
   });
 
   describe('múltiplos companions pro mesmo binário (defensive)', () => {
@@ -103,6 +117,62 @@ describe('CompanionRegistry', () => {
       expect(registry.getCompanionFor('paper.pdf')).toBe('new.pdf.md');
       expect(registry.getBinaryFor('old.pdf.md')).toBeNull();
       expect(registry.getBinaryFor('new.pdf.md')).toBe('paper.pdf');
+    });
+  });
+
+  describe('listener notifications', () => {
+    it('notifica listeners com (binaryPath, companionPath) ao adicionar', async () => {
+      const spy = vi.fn();
+      registry.addOnMutate(spy);
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      plugin.app.vault.__setFile('x.pdf.md', { binary: 'x.pdf' });
+      plugin.app.metadataCache.__triggerChanged('x.pdf.md');
+
+      expect(spy).toHaveBeenCalledWith('x.pdf', 'x.pdf.md');
+    });
+
+    it('notifica com companionPath=null quando companion perde binary:', async () => {
+      plugin.app.vault.__setFile('a.pdf.md', { binary: 'a.pdf' });
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      const spy = vi.fn();
+      registry.addOnMutate(spy);
+      plugin.app.vault.__setFile('a.pdf.md', {});
+      plugin.app.metadataCache.__triggerChanged('a.pdf.md');
+
+      expect(spy).toHaveBeenCalledWith('a.pdf', null);
+    });
+
+    it('removeOnMutate desinscreve o listener', async () => {
+      const spy = vi.fn();
+      registry.addOnMutate(spy);
+      registry.removeOnMutate(spy);
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      plugin.app.vault.__setFile('x.pdf.md', { binary: 'x.pdf' });
+      plugin.app.metadataCache.__triggerChanged('x.pdf.md');
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('writingInProgress (beginWrite/endWrite)', () => {
+    it('beginWrite suprime sync; endWrite libera após próximo tick', async () => {
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      plugin.app.vault.__setFile('a.pdf.md', { binary: 'a.pdf' });
+      registry.beginWrite('a.pdf.md');
+      plugin.app.metadataCache.__triggerChanged('a.pdf.md');
+      expect(registry.getCompanionFor('a.pdf')).toBeNull(); // sync foi suprimido
+
+      registry.endWrite('a.pdf.md');
+      await new Promise((r) => setTimeout(r, 0));
+      plugin.app.metadataCache.__triggerChanged('a.pdf.md');
+      expect(registry.getCompanionFor('a.pdf')).toBe('a.pdf.md');
     });
   });
 });
