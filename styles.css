@@ -26,14 +26,8 @@ body.hide-binary-companion .nav-file-title.is-binary-companion {
   min-height: 50vh;
 }
 
-.binary-notes-embed iframe,
-.binary-notes-embed img,
-.binary-notes-embed video,
-.binary-notes-embed audio,
-.binary-notes-embed .pdf-embed {
-  width: 100%;
-  max-width: 100%;
-}
+/* Sem regras forçadas em iframe/.pdf-embed — interferem no layout interno do PDF.js.
+   Imagens/áudio/vídeo herdam regras nativas do Obsidian (já cobertas em .markdown-embed). */
 
 .binary-notes-companion {
   border-top: 1px solid var(--background-modifier-border);

@@ -1,8 +1,20 @@
-import { App, EventRef, FileView, WorkspaceLeaf } from 'obsidian';
-import { isSupportedBinary } from '../utils/pathResolver';
+import { App, EventRef, FileView, TFile, WorkspaceLeaf } from 'obsidian';
+import { isSupportedBinary, isCompanionPath } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
-import { BINARY_NOTES_VIEW_TYPE } from '../constants';
 
+/**
+ * Set compartilhado pra outros módulos sinalizarem que NÃO querem que o ViewSwapper
+ * intercepte o próximo `active-leaf-change` daquele leaf. Usado, por exemplo, pelo botão
+ * "Open binary in viewer" no header do companion: ele quer abrir o binário cru sem o
+ * swapper redirecionar de volta pro companion (race causa "Transport destroyed" no PDF.js).
+ */
+export const swapBypass = new WeakSet<WorkspaceLeaf>();
+
+/**
+ * Fallback pra abertura de binário fora do explorer (drag/drop, comando do Obsidian,
+ * click em wikilink em outra nota). Quando uma leaf abre um binário com companion,
+ * substitui a abertura pelo companion .md (MarkdownView nativa).
+ */
 export class ViewSwapper {
   private ref: EventRef | null = null;
   private swapping = new WeakSet<WorkspaceLeaf>();
@@ -16,6 +28,7 @@ export class ViewSwapper {
     this.ref = this.app.workspace.on('active-leaf-change', (leaf) => {
       if (!leaf) return;
       if (this.swapping.has(leaf)) return;
+      if (swapBypass.has(leaf)) return;
       void this.maybeSwap(leaf);
     });
   }
@@ -29,17 +42,16 @@ export class ViewSwapper {
     if (!(view instanceof FileView)) return;
     const file = view.file;
     if (!file || !isSupportedBinary(file.path)) return;
-    if (view.getViewType() === BINARY_NOTES_VIEW_TYPE) return;
+    // Já é companion (.md aberto) — não faz nada
+    if (isCompanionPath(file.path)) return;
     const companionPath = this.registry.getCompanionFor(file.path);
     if (!companionPath) return;
+    const companionFile = this.app.vault.getAbstractFileByPath(companionPath);
+    if (!(companionFile instanceof TFile)) return;
 
     this.swapping.add(leaf);
     try {
-      await leaf.setViewState({
-        type: BINARY_NOTES_VIEW_TYPE,
-        state: { companionPath },
-        active: true,
-      });
+      await leaf.openFile(companionFile);
     } finally {
       // Liberar no próximo tick (após active-leaf-change novo disparar)
       setTimeout(() => this.swapping.delete(leaf), 0);

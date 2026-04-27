@@ -19,7 +19,7 @@ describe('commands', () => {
 
     const created = plugin.app.vault.__getFile('paper.pdf.md');
     expect(created).toBeDefined();
-    expect(created!.content).toMatch(/binary: paper\.pdf/);
+    expect(created!.content).toMatch(/binary: "paper\.pdf"/);
   });
 
   it('Add Binary Notes em binário com companion existente abre o existente em vez de criar novo', async () => {

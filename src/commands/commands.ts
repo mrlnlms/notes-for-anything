@@ -3,7 +3,6 @@ import { App, Notice, Plugin, TFile, Menu } from 'obsidian';
 import { isSupportedBinary, defaultCompanionPath } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 import {
-  BINARY_NOTES_VIEW_TYPE,
   CMD_ADD_BINARY_NOTES,
   CMD_TOGGLE_SOURCE,
   FM_KEY_BINARY,
@@ -30,21 +29,21 @@ export function registerCommands(
     },
   });
 
+  // "Open binary in viewer" — quando o companion .md está ativo, abre o binário associado
+  // em um split novo (PDF++, viewer nativo, ou qualquer plugin especialista assume).
   plugin.addCommand({
     id: CMD_TOGGLE_SOURCE,
-    name: 'Toggle source view',
+    name: 'Open binary in viewer',
     checkCallback: (checking) => {
-      const leaf = (app.workspace as unknown as { getActiveLeaf(): import('obsidian').WorkspaceLeaf | null }).getActiveLeaf();
-      const inOurView = (leaf?.view as { getViewType?: () => string } | undefined)?.getViewType?.() === BINARY_NOTES_VIEW_TYPE;
-      if (checking) return inOurView;
-      if (!inOurView || !leaf) return false;
-      const state = leaf.view?.getState?.() as { companionPath?: string } | undefined;
-      const companionPath = state?.companionPath;
-      if (!companionPath) return false;
-      const binaryPath = registry.getBinaryFor(companionPath);
+      const activeFile = app.workspace.getActiveFile();
+      if (!activeFile) return false;
+      const binaryPath = registry.getBinaryFor(activeFile.path);
       if (!binaryPath) return false;
+      if (checking) return true;
       const binaryFile = app.vault.getAbstractFileByPath(binaryPath);
-      if (binaryFile instanceof TFile) void leaf.openFile(binaryFile);
+      if (!(binaryFile instanceof TFile)) return false;
+      const newLeaf = app.workspace.getLeaf('split');
+      void newLeaf.openFile(binaryFile);
       return true;
     },
   });
@@ -89,14 +88,17 @@ async function addOrOpen(
         new Notice(`Template not found: ${templatePath}`);
       }
     }
-    const initial = `---\n${FM_KEY_BINARY}: ${binaryFile.path}\n---\n${body}`;
+    // Template inicial: frontmatter com binary: + body do template (se houver) ou vazio.
+    // Pra abrir o binário, o user clica no botão "Open binary" no header da MarkdownView.
+    // Aspas no value preservam paths com whitespace múltiplo / chars especiais YAML.
+    const escapedPath = binaryFile.path.replace(/"/g, '\\"');
+    const initial = `---\n${FM_KEY_BINARY}: "${escapedPath}"\n---\n\n${body}`;
     await app.vault.create(companionPath, initial);
   }
 
+  // Abre o companion como MarkdownView nativa (Properties + body editáveis)
+  const companionFile = app.vault.getAbstractFileByPath(companionPath);
+  if (!(companionFile instanceof TFile)) return;
   const leaf = app.workspace.getLeaf(false);
-  await leaf.setViewState({
-    type: BINARY_NOTES_VIEW_TYPE,
-    state: { companionPath },
-    active: true,
-  });
+  await leaf.openFile(companionFile);
 }

@@ -11,6 +11,7 @@ import { ViewSwapper } from './intercept/viewSwapper';
 import { ExplorerDecorator } from './explorer/explorerDecorator';
 import { BinaryNotesView } from './view/binaryNotesView';
 import { registerCommands } from './commands/commands';
+import { registerCompanionHeaderActions } from './companion/companionHeaderActions';
 
 export default class BinaryNotesPlugin extends Plugin {
   settings!: BinaryNotesSettings;
@@ -46,6 +47,9 @@ export default class BinaryNotesPlugin extends Plugin {
     // Explorer decoration: underline + hide
     this.explorerDecorator = new ExplorerDecorator(this, this.registry);
     this.explorerDecorator.initialize(this.settings.hideCompanions);
+
+    // Header action: botão "Open binary" no header da MarkdownView quando file é companion
+    registerCompanionHeaderActions(this, this.app, this.registry);
 
     // Comandos e UI
     registerCommands(this, this.app, this.registry, () => this.settings);

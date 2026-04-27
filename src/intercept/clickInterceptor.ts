@@ -1,7 +1,6 @@
-import { App, Plugin } from 'obsidian';
+import { App, Plugin, TFile } from 'obsidian';
 import { isSupportedBinary } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
-import { BINARY_NOTES_VIEW_TYPE } from '../constants';
 
 export class ClickInterceptor {
   private listener: ((evt: MouseEvent) => void) | null = null;
@@ -34,15 +33,14 @@ export class ClickInterceptor {
 
     evt.preventDefault();
     evt.stopImmediatePropagation();
-    void this.openCustomView(companionPath);
+    void this.openCompanion(companionPath);
   }
 
-  private async openCustomView(companionPath: string): Promise<void> {
+  /** Abre o companion .md como MarkdownView nativa (Properties + body editáveis). */
+  private async openCompanion(companionPath: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(companionPath);
+    if (!(file instanceof TFile)) return;
     const leaf = this.app.workspace.getLeaf(false);
-    await leaf.setViewState({
-      type: BINARY_NOTES_VIEW_TYPE,
-      state: { companionPath },
-      active: true,
-    });
+    await leaf.openFile(file);
   }
 }

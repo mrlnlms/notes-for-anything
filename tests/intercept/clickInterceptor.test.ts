@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPlugin } from '../pluginFactory';
 import { CompanionRegistry } from '../../src/registry/companionRegistry';
 import { ClickInterceptor } from '../../src/intercept/clickInterceptor';
-import { BINARY_NOTES_VIEW_TYPE } from '../../src/constants';
 
 describe('ClickInterceptor', () => {
   let plugin: ReturnType<typeof createPlugin>;
@@ -38,15 +37,21 @@ describe('ClickInterceptor', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
-  it('abre custom view via leaf.setViewState com companionPath', async () => {
+  it('abre o companion .md via leaf.openFile (MarkdownView nativa)', async () => {
+    // Espia o leaf.openFile do leaf que getLeaf vai retornar
+    const leaf = plugin.app.workspace.__createLeaf();
+    vi.spyOn(plugin.app.workspace, 'getLeaf').mockReturnValue(leaf as any);
+    const openSpy = vi.spyOn(leaf, 'openFile');
+
     const event = createExplorerClickEvent('paper.pdf');
     document.dispatchEvent(event);
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    const opened = plugin.app.workspace.__getLastSetViewState();
-    expect(opened?.type).toBe(BINARY_NOTES_VIEW_TYPE);
-    expect(opened?.state).toMatchObject({ companionPath: 'paper.pdf.md' });
+
+    expect(openSpy).toHaveBeenCalled();
+    const arg = openSpy.mock.calls[0]?.[0] as { path?: string } | undefined;
+    expect(arg?.path).toBe('paper.pdf.md');
   });
 });
 
