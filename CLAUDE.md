@@ -78,6 +78,19 @@ Hot-reload via plugin pjeby `hot-reload` instalado no demo vault — recompilou?
 - **Filosofia de coexistência**: Binary Notes é a camada de cidadania binária. Especialistas (PDF++, Media Notes, Excalidraw, ePub Reader) continuam fazendo a anotação fina. Não competir, integrar
 - **Manual tests** (`docs/MANUAL-TESTS.md`): rodar em vault real após mudanças significativas — mocks vitest+jsdom não pegam bugs de runtime real (PDF.js, MarkdownView, etc)
 
+## Próximo passo
+
+**Checkpoint runtime do fix `last writer wins + registry como fonte de verdade`** (commits `919c7a4` + `e70235d`). Mocks vitest passam, mas o ganho do fix só aparece em vault real:
+
+1. Rodar **S6 (rename do binário)** do `MANUAL-TESTS.md` no demo vault — confirmar que o `binary:` no companion atualiza pelos 3 caminhos (F2, menu, drag)
+2. Cenário novo, fora do MANUAL-TESTS: criar companion **fora do naming default** (ex.: `notas/sobre-paper.md` com `binary: "paper.pdf"` no frontmatter, em vez de `paper.pdf.md` ao lado). Validar:
+   - Header action "Open binary in viewer" aparece dentro do `.md`
+   - Renomear esse `.md` propaga corretamente no índice
+   - Deletar esse `.md` limpa o registry
+3. Cenário do caso patológico: criar dois `.md` apontando pro mesmo binário (manualmente). Confirmar que só um vira companion ativo (hide + header action) e o outro fica como nota normal
+
+Se passar nos 3, considerar adicionar como S11/S12 no `MANUAL-TESTS.md`.
+
 ## Tópicos abertos
 
 - BinaryNotesView e headerActions órfãos: remover quando confirmado que ninguém precisa
