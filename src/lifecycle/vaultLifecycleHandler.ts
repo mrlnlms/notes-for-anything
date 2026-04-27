@@ -1,6 +1,6 @@
 import { App, EventRef, TFile, TAbstractFile } from 'obsidian';
 import { FM_KEY_BINARY } from '../constants';
-import { isSupportedBinary, isCompanionPath } from '../utils/pathResolver';
+import { isSupportedBinary } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 
 export class VaultLifecycleHandler {
@@ -29,8 +29,8 @@ export class VaultLifecycleHandler {
   private async handleRename(file: TAbstractFile, oldPath: string): Promise<void> {
     if (!(file instanceof TFile)) return;
 
-    // Companion renomeado → atualizar índice
-    if (isCompanionPath(oldPath)) {
+    // Companion renomeado → atualizar índice (registry é a fonte de verdade)
+    if (this.registry.getBinaryFor(oldPath)) {
       this.registry.migrateFilePath(oldPath, file.path);
       return;
     }
@@ -56,8 +56,8 @@ export class VaultLifecycleHandler {
   private async handleDelete(file: TAbstractFile): Promise<void> {
     if (!(file instanceof TFile)) return;
 
-    // Companion deletado → registry cleanup acontece via metadataCache
-    if (isCompanionPath(file.path)) {
+    // Companion deletado → registry cleanup (frontmatter é a fonte de verdade)
+    if (this.registry.getBinaryFor(file.path)) {
       this.registry.handleCompanionRemoved(file.path);
       return;
     }

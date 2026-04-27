@@ -38,7 +38,8 @@ A spec original (`docs/superpowers/specs/2026-04-27-binary-notes-design.md`) des
 
 - **Path no `binary:`**: absolute desde vault root, sempre **double-quoted** (`binary: "path/to/file.pdf"`) — preserva whitespace múltiplo e chars especiais YAML
 - **Convenção de nome do companion side-by-side**: `<basename>.<ext>.md` (ex.: `paper.pdf.md`)
-- **Cardinalidade**: **um companion por binário, regra estrita.** Plugin previne criação de segundo. Caso patológico (user editou manualmente): last writer wins, sem tie-break. O `.md` "perdedor" continua existindo no vault mas não é o ativo — não há lógica especial pra resolver isso, é responsabilidade do user limpar
+- **Cardinalidade**: **um companion por binário, regra estrita.** Plugin previne criação de segundo. Caso patológico (user editou manualmente): last writer wins, sem tie-break. O `.md` perdedor sai do índice (`getBinaryFor` retorna `null` pra ele) e vira nota normal — sem hide, sem header action. Não há lógica especial pra resolver isso, é responsabilidade do user limpar
+- **Frontmatter é a fonte de verdade**: companion pode viver em qualquer lugar com qualquer nome. Fluxos de header action (`companionHeaderActions`) e lifecycle (`vaultLifecycleHandler`) consultam o registry, não o naming convention. `isCompanionPath()` só é usado pra descrever intenção em `commands.ts` (criação no padrão default)
 - **Coexistência**: sempre intercepta. Source toggle delega ao viewer default registrado (PDF++ se instalado)
 - **Companion abre como MarkdownView nativa** — Properties, body, backlinks, tags, tudo Obsidian-native
 - **Body do companion não tem template embed automático** — user controla o body inteiro

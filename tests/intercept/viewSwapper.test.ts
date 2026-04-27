@@ -38,7 +38,7 @@ describe('ViewSwapper', () => {
     const swapper = new ViewSwapper(plugin.app as any, registry);
     swapper.initialize();
 
-    // Leaf com o companion .md aberto — isCompanionPath retorna true, não swap
+    // Leaf com o companion .md aberto — extensão .md não é binária suportada, não swap
     const leaf = plugin.app.workspace.__createLeafWithFile('paper.pdf.md', 'markdown');
     const openSpy = vi.spyOn(leaf, 'openFile');
     plugin.app.workspace.__triggerActiveLeafChange(leaf);

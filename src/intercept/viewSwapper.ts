@@ -1,5 +1,5 @@
 import { App, EventRef, FileView, TFile, WorkspaceLeaf } from 'obsidian';
-import { isSupportedBinary, isCompanionPath } from '../utils/pathResolver';
+import { isSupportedBinary } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 
 /**
@@ -42,8 +42,6 @@ export class ViewSwapper {
     if (!(view instanceof FileView)) return;
     const file = view.file;
     if (!file || !isSupportedBinary(file.path)) return;
-    // Já é companion (.md aberto) — não faz nada
-    if (isCompanionPath(file.path)) return;
     const companionPath = this.registry.getCompanionFor(file.path);
     if (!companionPath) return;
     const companionFile = this.app.vault.getAbstractFileByPath(companionPath);

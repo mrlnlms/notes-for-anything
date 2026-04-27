@@ -132,8 +132,15 @@ export class CompanionRegistry {
       this.notify(previousBinary);
     }
 
+    // Last writer wins: se já havia outro companion ativo pra este binário,
+    // o perdedor sai do byCompanion e vira nota normal.
+    const existing = this.byBinary.get(binaryPath);
+    if (existing && existing.companionPath !== companionPath) {
+      this.byCompanion.delete(existing.companionPath);
+    }
+
     this.byCompanion.set(companionPath, binaryPath);
-    this.byBinary.set(binaryPath, { companionPath, visible }); // last writer wins
+    this.byBinary.set(binaryPath, { companionPath, visible });
     this.notify(binaryPath);
   }
 

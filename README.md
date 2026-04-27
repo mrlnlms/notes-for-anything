@@ -15,7 +15,7 @@ EPUB is intentionally out of scope (delegated to the ePub Reader plugin).
 - A companion is just a `.md` file with `binary: <path>` in the frontmatter (path is double-quoted so paths with spaces or special YAML chars survive).
 - Default location: alongside the binary (`paper.pdf` → `paper.pdf.md`).
 - Companion can live anywhere in the vault — the frontmatter is the source of truth.
-- One companion per binary, enforced on creation. If multiple are detected (manual creation, sync conflict), the registry prefers the one alongside the binary, then alphabetical order.
+- One companion per binary, enforced by the **Add Binary Notes** command. If two `.md` files end up pointing to the same binary (manual edit, sync conflict), the last one written wins — the other becomes a regular note.
 - Companions are hidden in the file explorer by default (toggle in settings).
   - Add `visible: true` in a companion's frontmatter to expose it individually.
 

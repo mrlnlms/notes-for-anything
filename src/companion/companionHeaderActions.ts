@@ -1,7 +1,7 @@
 import { App, Plugin, TFile, View, WorkspaceLeaf } from 'obsidian';
 import { CompanionRegistry } from '../registry/companionRegistry';
 import { swapBypass } from '../intercept/viewSwapper';
-import { isCompanionPath, isSupportedBinary } from '../utils/pathResolver';
+import { isSupportedBinary } from '../utils/pathResolver';
 
 /**
  * Adiciona header actions de navegação binário↔companion:
@@ -61,12 +61,9 @@ function syncLeaf(app: App, registry: CompanionRegistry, leaf: WorkspaceLeaf): v
   }
 
   // Companion .md aberto → botão "Open binary in viewer"
-  if (isCompanionPath(file.path)) {
-    const binaryPath = registry.getBinaryFor(file.path);
-    if (!binaryPath) {
-      detachButton(leaf);
-      return;
-    }
+  // Registry é a fonte de verdade: companion pode viver em qualquer lugar.
+  const binaryPath = registry.getBinaryFor(file.path);
+  if (binaryPath) {
     ensureButton(leaf, view, binaryPath, 'image-file', 'Open binary in viewer', (path) => {
       void openInSameLeaf(app, path, leaf);
     });
