@@ -1,0 +1,8 @@
+node_modules/
+/main.js
+data.json
+*.js.map
+demo/.obsidian/plugins/binary-notes/
+demo/.obsidian/workspace.json
+demo/.obsidian/workspace-mobile.json
+.DS_Store

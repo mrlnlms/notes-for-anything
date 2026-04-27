@@ -1,0 +1,10 @@
+{
+  "id": "binary-notes",
+  "name": "Binary Notes",
+  "version": "0.1.0",
+  "minAppVersion": "1.6.7",
+  "description": "Promote binary files (PDF, image, audio, video) to first-class citizens with sidecar markdown notes and a unified custom view.",
+  "author": "Marlon Lemes",
+  "authorUrl": "https://github.com/mosx",
+  "isDesktopOnly": false
+}
