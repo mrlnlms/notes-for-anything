@@ -103,6 +103,12 @@ export class ItemView extends Component {
   addAction(_icon: string, _title: string, _cb: (evt: MouseEvent) => any): HTMLElement {
     const el = document.createElement('div');
     el.classList.add('view-action');
+    // Se o leaf tiver tracking (pluginFactory), pendura no host e registra no array
+    const leafAny = this.leaf as any;
+    if (leafAny?.__actionsHost && Array.isArray(leafAny.__actions)) {
+      leafAny.__actionsHost.appendChild(el);
+      leafAny.__actions.push(el);
+    }
     return el;
   }
 }

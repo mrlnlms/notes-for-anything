@@ -8,6 +8,7 @@ import {
 } from 'obsidian';
 import { BINARY_NOTES_VIEW_TYPE } from '../constants';
 import { CompanionRegistry } from '../registry/companionRegistry';
+import { mountHeaderActions, detachHeaderActions } from './headerActions';
 
 interface BinaryNotesViewState {
   companionPath: string;
@@ -17,7 +18,7 @@ export class BinaryNotesView extends ItemView {
   private companionPath: string | null = null;
   private deleteRef: EventRef | null = null;
 
-  constructor(leaf: WorkspaceLeaf, private registry: CompanionRegistry) {
+  constructor(leaf: WorkspaceLeaf, public readonly registry: CompanionRegistry) {
     super(leaf);
   }
 
@@ -47,6 +48,7 @@ export class BinaryNotesView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    mountHeaderActions(this);
     this.deleteRef = this.app.vault.on('delete', (file: TFile) => {
       if (file.path === this.companionPath) {
         this.leaf.detach();
@@ -56,6 +58,7 @@ export class BinaryNotesView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    detachHeaderActions(this);
     if (this.deleteRef) this.app.vault.offref(this.deleteRef);
     this.contentEl.empty();
   }

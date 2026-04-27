@@ -55,4 +55,16 @@ describe('BinaryNotesView', () => {
     // Não deve lançar; pode chamar leaf.detach()
     expect(true).toBe(true);
   });
+
+  it('detach manual previne duplicação em hot-reload', async () => {
+    const view = new BinaryNotesView(leaf, registry);
+    await view.setState({ companionPath: 'paper.pdf.md' }, { history: false });
+    await view.onOpen();
+    expect(leaf.__getActions().length).toBe(1); // após primeiro mount, exatamente 1 action
+    await view.onClose();
+    await view.onOpen();
+    await view.onClose();
+    // Após cycle hot-reload completo, ainda no máximo 1
+    expect(leaf.__getActions().length).toBeLessThanOrEqual(1);
+  });
 });

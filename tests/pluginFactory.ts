@@ -134,10 +134,11 @@ export interface FakePlugin {
   __runCommand: (commandId: string) => any;
 }
 
-function makeAddAction(actions: HTMLElement[]) {
+function makeAddAction(actions: HTMLElement[], host: HTMLElement) {
   return (_icon: string, _title: string, _cb: any): HTMLElement => {
     const el = document.createElement('div');
     el.classList.add('view-action');
+    host.appendChild(el);
     actions.push(el);
     return el;
   };
@@ -287,6 +288,7 @@ export function createPlugin(): FakePlugin {
   // mantém um stub de view com `addAction` que pendura elements no array `__actions`.
   function createLeaf(): any {
     const actions: HTMLElement[] = [];
+    const actionsHost = document.createElement('div');
     const leaf: any = {
       view: null as any,
       app,
@@ -296,7 +298,7 @@ export function createPlugin(): FakePlugin {
         const type = state?.type ?? '';
         leaf.view = leaf.view ?? {
           getViewType: () => type,
-          addAction: makeAddAction(actions),
+          addAction: makeAddAction(actions, actionsHost),
         };
       },
       getViewState() {
@@ -306,9 +308,11 @@ export function createPlugin(): FakePlugin {
       async openFile(_file: TFile) {},
       detach() {},
       __getActions(): HTMLElement[] {
-        return actions;
+        // Apenas elements ainda attachados (simula DOM real: detach() remove do parent)
+        return actions.filter((el) => el.parentNode !== null);
       },
       __actions: actions,
+      __actionsHost: actionsHost,
     };
     return leaf;
   }
@@ -320,7 +324,7 @@ export function createPlugin(): FakePlugin {
     const view: any = new FileView(leaf as unknown as WorkspaceLeaf);
     view.file = file;
     view.getViewType = () => viewType;
-    view.addAction = makeAddAction(leaf.__actions);
+    view.addAction = makeAddAction(leaf.__actions, leaf.__actionsHost);
     leaf.view = view;
     return leaf;
   }
@@ -330,7 +334,7 @@ export function createPlugin(): FakePlugin {
     const view: any = {
       getViewType: () => viewType,
       file: null,
-      addAction: makeAddAction(leaf.__actions),
+      addAction: makeAddAction(leaf.__actions, leaf.__actionsHost),
     };
     leaf.view = view;
     return leaf;
