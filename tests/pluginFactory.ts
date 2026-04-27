@@ -132,6 +132,7 @@ export interface FakePlugin {
   loadData: ReturnType<typeof vi.fn>;
   saveData: ReturnType<typeof vi.fn>;
   __runCommand: (commandId: string) => any;
+  __unloadDomEvents: () => void;
 }
 
 function makeAddAction(actions: HTMLElement[], host: HTMLElement) {
@@ -429,6 +430,7 @@ export function createPlugin(): FakePlugin {
   };
 
   const commands = new Map<string, any>();
+  const domEventCleanups: Array<() => void> = [];
 
   const plugin: FakePlugin = {
     app,
@@ -441,12 +443,23 @@ export function createPlugin(): FakePlugin {
     registerEvent: vi.fn((_ref: EventRef) => {}),
     registerDomEvent: vi.fn((target: any, event: string, handler: any, _capture?: boolean) => {
       target.addEventListener(event, handler, _capture);
+      domEventCleanups.push(() => target.removeEventListener(event, handler, _capture));
     }),
     registerInterval: vi.fn((id: number) => id),
     registerView: vi.fn((_type: string, _factory: any) => {}),
     addSettingTab: vi.fn((_tab: any) => {}),
     loadData: vi.fn(async () => ({})),
     saveData: vi.fn(async (_data: any) => {}),
+    __unloadDomEvents(): void {
+      while (domEventCleanups.length > 0) {
+        const fn = domEventCleanups.pop();
+        try {
+          fn?.();
+        } catch {
+          // noop
+        }
+      }
+    },
     __runCommand(commandId: string): any {
       const cmd = commands.get(commandId);
       if (!cmd) {
