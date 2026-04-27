@@ -15,9 +15,3 @@ export function isSupportedBinary(path: string): boolean {
 export function defaultCompanionPath(binaryPath: string): string {
   return `${binaryPath}.md`;
 }
-
-export function isCompanionPath(path: string): boolean {
-  if (!path.endsWith('.md')) return false;
-  const withoutMd = path.slice(0, -3);
-  return isSupportedBinary(withoutMd);
-}

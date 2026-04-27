@@ -1,8 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   isSupportedBinary,
   defaultCompanionPath,
-  isCompanionPath,
 } from '../../src/utils/pathResolver';
 
 describe('pathResolver', () => {
@@ -26,17 +25,6 @@ describe('pathResolver', () => {
     it('appenda .md preservando extensão original', () => {
       expect(defaultCompanionPath('paper.pdf')).toBe('paper.pdf.md');
       expect(defaultCompanionPath('sub/img.png')).toBe('sub/img.png.md');
-    });
-  });
-
-  describe('isCompanionPath', () => {
-    it('detecta nomes no formato <basename>.<ext>.md quando ext é suportada', () => {
-      expect(isCompanionPath('paper.pdf.md')).toBe(true);
-      expect(isCompanionPath('sub/img.png.md')).toBe(true);
-    });
-    it('rejeita .md soltos ou extensão não suportada', () => {
-      expect(isCompanionPath('note.md')).toBe(false);
-      expect(isCompanionPath('arquivo.epub.md')).toBe(false);
     });
   });
 });
