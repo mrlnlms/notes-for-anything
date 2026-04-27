@@ -168,6 +168,13 @@ describe('mock helpers smoke', () => {
     expect(fmRef.binary).toBe('new.pdf');
   });
 
+  it('setViewState atualiza leaf.view.getViewType', async () => {
+    const plugin = createPlugin();
+    const leaf = plugin.app.workspace.__createLeaf();
+    await leaf.setViewState({ type: 'foo-view', state: {} });
+    expect(leaf.view.getViewType()).toBe('foo-view');
+  });
+
   it('MarkdownRenderer.render é mockable como spy', async () => {
     const plugin = createPlugin();
     const el = document.createElement('div');

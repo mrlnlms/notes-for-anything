@@ -2,6 +2,7 @@
 // Helpers de manipulação (__setFile, __triggerXxx, etc) adicionados pela Task 2.5.
 
 import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 import {
   TFile,
   TAbstractFile,
@@ -42,15 +43,83 @@ function createEventBus(): EventBus {
   };
 }
 
-interface VirtualFileEntry {
+export interface VirtualFileEntry {
   file: TFile;
   frontmatter: Record<string, unknown>;
   content: string;
   kind: 'md' | 'binary';
 }
 
+export interface FakeVault {
+  // standard vault surface (whatever the factory provides)
+  getAbstractFileByPath: Mock;
+  getMarkdownFiles: Mock;
+  getFiles: Mock;
+  cachedRead: Mock;
+  read: Mock;
+  create: Mock;
+  delete: Mock;
+  rename: Mock;
+  process: Mock;
+  on: (event: string, handler: (...args: any[]) => any) => any;
+  off: (event: string, handler: (...args: any[]) => any) => void;
+  offref: (ref: any) => void;
+  trigger: (event: string, ...args: any[]) => void;
+  // helpers
+  __setFile(path: string, fm?: Record<string, unknown>, kind?: 'md' | 'binary', body?: string): TFile;
+  __deleteFile(path: string): void;
+  __getFile(path: string): VirtualFileEntry | undefined;
+  __triggerRename(oldPath: string, newPath: string): void;
+  __triggerDelete(path: string): void;
+}
+
+export interface FakeMetadataCache {
+  getFileCache: Mock;
+  getCache: Mock;
+  on: (event: string, handler: (...args: any[]) => any) => any;
+  off: (event: string, handler: (...args: any[]) => any) => void;
+  offref: (ref: any) => void;
+  trigger: (event: string, ...args: any[]) => void;
+  __triggerChanged(path: string): void;
+}
+
+export interface FakeWorkspace {
+  getActiveFile: Mock;
+  getActiveLeaf: Mock;
+  getLeaf: Mock;
+  getLeavesOfType: Mock;
+  getActiveViewOfType: Mock;
+  onLayoutReady: Mock;
+  on: (event: string, handler: (...args: any[]) => any) => any;
+  off: (event: string, handler: (...args: any[]) => any) => void;
+  offref: (ref: any) => void;
+  trigger: (event: string, ...args: any[]) => void;
+  __triggerLayoutReady(): Promise<void> | void;
+  __createLeaf(): any;
+  __createLeafWithFile(path: string, viewType: string): any;
+  __createLeafWithViewType(viewType: string): any;
+  __triggerActiveLeafChange(leaf: any): void;
+  __getLastSetViewState(): { type: string; state: any } | null;
+  __resetSetViewStateLog(): void;
+  __setActiveFile(path: string): void;
+}
+
+export interface FakeFileManager {
+  processFrontMatter: Mock;
+  renameFile: Mock;
+  __mockProcessFrontMatter(path: string, fmRef: Record<string, unknown>): void;
+}
+
+export interface FakeApp {
+  vault: FakeVault;
+  workspace: FakeWorkspace;
+  metadataCache: FakeMetadataCache;
+  fileManager: FakeFileManager;
+  MarkdownRenderer: { render: Mock };
+}
+
 export interface FakePlugin {
-  app: any;
+  app: FakeApp;
   manifest: any;
   __commands: Map<string, any>;
   __layoutReadyCallbacks: Array<() => void>;
@@ -63,6 +132,15 @@ export interface FakePlugin {
   loadData: ReturnType<typeof vi.fn>;
   saveData: ReturnType<typeof vi.fn>;
   __runCommand: (commandId: string) => any;
+}
+
+function makeAddAction(actions: HTMLElement[]) {
+  return (_icon: string, _title: string, _cb: any): HTMLElement => {
+    const el = document.createElement('div');
+    el.classList.add('view-action');
+    actions.push(el);
+    return el;
+  };
 }
 
 export function createPlugin(): FakePlugin {
@@ -107,7 +185,7 @@ export function createPlugin(): FakePlugin {
     return file;
   }
 
-  const vault = {
+  const vault: FakeVault = {
     ...vaultBus,
     getAbstractFileByPath: vi.fn((path: string): TAbstractFile | null => {
       const entry = vaultFiles.get(path);
@@ -116,7 +194,7 @@ export function createPlugin(): FakePlugin {
     getMarkdownFiles: vi.fn((): TFile[] => {
       const out: TFile[] = [];
       for (const entry of vaultFiles.values()) {
-        if (entry.file.extension === 'md') out.push(entry.file);
+        if (entry.kind === 'md') out.push(entry.file);
       }
       return out;
     }),
@@ -134,7 +212,9 @@ export function createPlugin(): FakePlugin {
       return entry?.content ?? '';
     }),
     create: vi.fn(async (path: string, content: string): Promise<TFile> => {
-      return setVirtualFile(path, {}, 'md', content);
+      const ext = path.split('.').pop()?.toLowerCase() ?? '';
+      const kind: 'md' | 'binary' = ext === 'md' ? 'md' : 'binary';
+      return setVirtualFile(path, {}, kind, content);
     }),
     delete: vi.fn(async (file: TAbstractFile): Promise<void> => {
       vaultFiles.delete(file.path);
@@ -181,7 +261,7 @@ export function createPlugin(): FakePlugin {
     },
   };
 
-  const metadataCache = {
+  const metadataCache: FakeMetadataCache = {
     ...metadataCacheBus,
     getFileCache: vi.fn((file: TFile) => {
       const entry = vaultFiles.get(file.path);
@@ -216,17 +296,8 @@ export function createPlugin(): FakePlugin {
         const type = state?.type ?? '';
         leaf.view = leaf.view ?? {
           getViewType: () => type,
-          addAction: (_icon: string, _title: string, _cb: any) => {
-            const el = document.createElement('div');
-            el.classList.add('view-action');
-            actions.push(el);
-            return el;
-          },
+          addAction: makeAddAction(actions),
         };
-        if (leaf.view && typeof leaf.view.getViewType === 'function') {
-          // se view existir, atualiza implicitamente o type via factory simples
-          // mas mantém referência intacta pra testes que checam identidade
-        }
       },
       getViewState() {
         const t = leaf.view?.getViewType?.() ?? '';
@@ -249,12 +320,7 @@ export function createPlugin(): FakePlugin {
     const view: any = new FileView(leaf as unknown as WorkspaceLeaf);
     view.file = file;
     view.getViewType = () => viewType;
-    view.addAction = (_icon: string, _title: string, _cb: any) => {
-      const el = document.createElement('div');
-      el.classList.add('view-action');
-      leaf.__actions.push(el);
-      return el;
-    };
+    view.addAction = makeAddAction(leaf.__actions);
     leaf.view = view;
     return leaf;
   }
@@ -264,18 +330,13 @@ export function createPlugin(): FakePlugin {
     const view: any = {
       getViewType: () => viewType,
       file: null,
-      addAction: (_icon: string, _title: string, _cb: any) => {
-        const el = document.createElement('div');
-        el.classList.add('view-action');
-        leaf.__actions.push(el);
-        return el;
-      },
+      addAction: makeAddAction(leaf.__actions),
     };
     leaf.view = view;
     return leaf;
   }
 
-  const workspace = {
+  const workspace: FakeWorkspace = {
     ...workspaceBus,
     getActiveFile: vi.fn((): TFile | null => {
       if (!activeFilePath) return null;
@@ -320,7 +381,7 @@ export function createPlugin(): FakePlugin {
     },
   };
 
-  const fileManager = {
+  const fileManager: FakeFileManager = {
     processFrontMatter: vi.fn(async (file: TFile, fn: (fm: Record<string, unknown>) => void): Promise<void> => {
       // Se tiver fmRef registrado pra esse path, usa ele; senão, usa o frontmatter do vault virtual
       const ref = fmRefs.get(file.path);
@@ -351,7 +412,7 @@ export function createPlugin(): FakePlugin {
     },
   };
 
-  const app: any = {
+  const app: FakeApp = {
     vault,
     workspace,
     metadataCache,
