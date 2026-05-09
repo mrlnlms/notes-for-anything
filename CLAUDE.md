@@ -12,7 +12,7 @@ Plugin Obsidian **Binary Notes** funcional, primeira versão rodando. Plugin ID:
 
 ## Arquitetura atual (refatorada — não é mais a do spec original)
 
-A spec original (`docs/superpowers/specs/2026-04-27-binary-notes-design.md`) descrevia uma `ItemView` custom com embed + body. **Foi refatorado** pra largar a custom view e usar MarkdownView nativa do Obsidian — Properties editáveis vêm de graça.
+A spec original (registro histórico em `obsidian-plugins-workbench/obsidian-binary-props/superpowers/specs/2026-04-27-binary-notes-design.md` — pasta-irmã do vault) descrevia uma `ItemView` custom com embed + body. **Foi refatorado** pra largar a custom view e usar MarkdownView nativa do Obsidian — Properties editáveis vêm de graça.
 
 ### Componentes vivos
 
@@ -97,3 +97,26 @@ Se passar nos 3, considerar adicionar como S11/S12 no `MANUAL-TESTS.md`.
 - Embeds `![[arquivo.pdf]]` em outras notas: usam viewer nativo do Obsidian (não a custom view, que não existe mais)
 - Backlinks panel: aparece nativo no MarkdownView do companion. Se quiser unificar com backlinks do binário cru, é design dedicado
 - Coexistência específica com PDF++: bypass condicional via setting se demandar
+
+## Estrutura de docs
+
+Docs versionados (no repo):
+- `CLAUDE.md` — instruções/contexto pra Claude Code (raiz)
+- `README.md` — público no GitHub (raiz)
+- `docs/MANUAL-TESTS.md` — cenários de teste manual em vault real
+
+Docs não-versionados (fora do repo, em `obsidian-plugins-workbench/obsidian-binary-props/`):
+- `discovery/` — discovery docs e raciocínio inicial (registro histórico)
+- `superpowers/plans/` — plans gerados por skill (`superpowers:writing-plans` etc)
+- `superpowers/specs/` — specs gerados por skill (`superpowers:brainstorming`, design)
+
+**Regra:** specs e plans gerados por skills moram FORA do repo, na pasta-irmã do vault. Repo só versiona docs estáveis do projeto.
+
+## Plugins paralelos / spike / PoC
+
+Se uma sessão neste projeto gerar necessidade de criar um plugin Obsidian separado (PoC de viabilidade, spike, plugin novo), e o trabalho estiver no vault `obsidian-plugins-workbench` (bancada local), o layout segue regra fixa:
+
+- **Código** → `.obsidian/plugins/<plugin-id>/` (com `.git` próprio, repo `mrlnlms/<plugin-id>` no GitHub)
+- **Docs / history / research / notas de teste** → `obsidian-plugins-workbench/<plugin-id>/` (parte do vault, fora do repo do plugin)
+
+Detalhes: ver `obsidian-plugins-workbench/.claude/CLAUDE.md` (CLAUDE.md do vault).

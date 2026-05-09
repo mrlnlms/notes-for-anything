@@ -49,4 +49,4 @@ npm run build      # production build (generates main.js)
 
 ## Status
 
-Personal-scale plugin built for the author's own workflow. See `docs/01-discovery-binary-companion.md` for design rationale and `docs/superpowers/specs/2026-04-27-binary-notes-design.md` for the technical spec.
+Personal-scale plugin built for the author's own workflow.
