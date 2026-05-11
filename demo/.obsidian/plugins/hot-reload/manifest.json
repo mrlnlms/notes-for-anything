@@ -1,9 +1,0 @@
-{
-  "id": "hot-reload",
-  "name": "Hot Reload",
-  "version": "0.2.0",
-  "minAppVersion": "0.9.7",
-  "description": "Auto-reload plugins on file changes",
-  "author": "pjeby",
-  "isDesktopOnly": false
-}

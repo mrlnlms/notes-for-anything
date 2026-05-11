@@ -1,27 +1,27 @@
-/* Binary Notes — file explorer + custom view */
+/* Notes for Anything — file explorer + custom view */
 
-/* Hide companions quando body tem .hide-binary-companion */
-body.hide-binary-companion .nav-file-title.is-binary-companion {
+/* Hide companions quando body tem .hide-nfa-companion */
+body.hide-nfa-companion .nav-file-title.is-nfa-companion {
   display: none;
 }
 
 /* Underline em binários que têm companion */
-.nav-file-title.has-binary-companion {
+.nav-file-title.has-nfa-companion {
   text-decoration: underline;
   text-decoration-style: dotted;
   text-decoration-color: var(--text-accent);
   text-underline-offset: 2px;
 }
 
-/* Custom view layout */
-.binary-notes-view {
+/* Custom view layout (legado da ItemView órfã, mantida pra workspace state antigo) */
+.nfa-view {
   display: flex;
   flex-direction: column;
   gap: var(--size-4-3);
   padding: var(--size-4-2);
 }
 
-.binary-notes-embed {
+.nfa-embed {
   width: 100%;
   min-height: 50vh;
 }
@@ -29,7 +29,7 @@ body.hide-binary-companion .nav-file-title.is-binary-companion {
 /* Sem regras forçadas em iframe/.pdf-embed — interferem no layout interno do PDF.js.
    Imagens/áudio/vídeo herdam regras nativas do Obsidian (já cobertas em .markdown-embed). */
 
-.binary-notes-companion {
+.nfa-companion {
   border-top: 1px solid var(--background-modifier-border);
   padding-top: var(--size-4-2);
 }

@@ -434,7 +434,7 @@ export function createPlugin(): FakePlugin {
 
   const plugin: FakePlugin = {
     app,
-    manifest: { id: 'binary-notes', name: 'Binary Notes', version: '0.1.0' },
+    manifest: { id: 'notes-for-anything', name: 'Notes for Anything', version: '0.1.0' },
     __commands: commands,
     __layoutReadyCallbacks: layoutReadyCallbacks,
     addCommand: vi.fn((cmd: any) => {

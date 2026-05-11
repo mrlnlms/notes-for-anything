@@ -1,10 +1,10 @@
 import { ItemView, TFile } from 'obsidian';
-import { BinaryNotesView } from './binaryNotesView';
+import { NotesForAnythingView } from './binaryNotesView';
 
 // WeakMap evita leak: quando a view é GC'd, a entry some sozinha.
 const headerActionsByView = new WeakMap<ItemView, Set<HTMLElement>>();
 
-export function mountHeaderActions(view: BinaryNotesView): void {
+export function mountHeaderActions(view: NotesForAnythingView): void {
   detachHeaderActions(view); // safety: limpa antes de adicionar (anti hot-reload duplication)
   const set = new Set<HTMLElement>();
 
@@ -27,7 +27,7 @@ export function detachHeaderActions(view: ItemView): void {
   headerActionsByView.delete(view);
 }
 
-async function openSource(view: BinaryNotesView): Promise<void> {
+async function openSource(view: NotesForAnythingView): Promise<void> {
   const companionPath = (view.getState() as { companionPath?: string }).companionPath;
   if (!companionPath) return;
   const binaryPath = view.registry.getBinaryFor(companionPath);
@@ -35,7 +35,5 @@ async function openSource(view: BinaryNotesView): Promise<void> {
   const binaryFile = view.app.vault.getAbstractFileByPath(binaryPath);
   if (!(binaryFile instanceof TFile)) return;
   // openFile na mesma leaf delega ao viewer default registrado (PDF++ se instalado, senão nativo).
-  // Custo conhecido: usuário não tem botão de "voltar pra Binary Notes" depois — clique no binário no
-  // explorer reabre a custom view (via ClickInterceptor).
   await view.leaf.openFile(binaryFile);
 }

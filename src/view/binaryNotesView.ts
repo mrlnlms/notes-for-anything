@@ -6,15 +6,15 @@ import {
   ViewStateResult,
   EventRef,
 } from 'obsidian';
-import { BINARY_NOTES_VIEW_TYPE, FM_KEY_BINARY } from '../constants';
+import { NFA_VIEW_TYPE, FM_KEY_BINARY } from '../constants';
 import { CompanionRegistry } from '../registry/companionRegistry';
 import { mountHeaderActions, detachHeaderActions } from './headerActions';
 
-interface BinaryNotesViewState {
+interface NotesForAnythingViewState {
   companionPath: string;
 }
 
-export class BinaryNotesView extends ItemView {
+export class NotesForAnythingView extends ItemView {
   private companionPath: string | null = null;
   private deleteRef: EventRef | null = null;
 
@@ -23,11 +23,11 @@ export class BinaryNotesView extends ItemView {
   }
 
   getViewType(): string {
-    return BINARY_NOTES_VIEW_TYPE;
+    return NFA_VIEW_TYPE;
   }
 
   getDisplayText(): string {
-    if (!this.companionPath) return 'Binary Notes';
+    if (!this.companionPath) return 'Notes for Anything';
     const binary = this.registry.getBinaryFor(this.companionPath);
     return binary ? `Notes: ${binary}` : this.companionPath;
   }
@@ -36,7 +36,7 @@ export class BinaryNotesView extends ItemView {
     return 'file-symlink';
   }
 
-  async setState(state: BinaryNotesViewState, result: ViewStateResult): Promise<void> {
+  async setState(state: NotesForAnythingViewState, result: ViewStateResult): Promise<void> {
     this.companionPath = state.companionPath;
     await super.setState(state, result);
     // Sempre renderiza — não condicionar em isShown (frágil em jsdom e em runtime real conforme ordem setState/onOpen)
@@ -80,10 +80,10 @@ export class BinaryNotesView extends ItemView {
       return;
     }
 
-    const wrapper = this.contentEl.createDiv({ cls: 'binary-notes-view' });
+    const wrapper = this.contentEl.createDiv({ cls: 'nfa-view' });
 
     // Embed do binário
-    const embedHost = wrapper.createDiv({ cls: 'binary-notes-embed' });
+    const embedHost = wrapper.createDiv({ cls: 'nfa-embed' });
     await MarkdownRenderer.render(
       this.app,
       `![[${binaryPath}]]`,
@@ -99,7 +99,7 @@ export class BinaryNotesView extends ItemView {
     if (file instanceof TFile) {
       const raw = await this.app.vault.cachedRead(file);
       const displayContent = this.frontmatterAsCodeblock(raw);
-      const noteHost = wrapper.createDiv({ cls: 'binary-notes-companion' });
+      const noteHost = wrapper.createDiv({ cls: 'nfa-companion' });
       await MarkdownRenderer.render(this.app, displayContent, noteHost, this.companionPath, this);
     }
   }

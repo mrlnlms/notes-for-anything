@@ -1,7 +1,7 @@
 {
-  "name": "binary-notes",
+  "name": "notes-for-anything",
   "version": "0.1.0",
-  "description": "Promote binary files (PDF, image, audio, video) to first-class citizens with sidecar markdown notes and a unified custom view.",
+  "description": "Pair any file (PDF, image, audio, video) with a sidecar markdown note opened as a native Obsidian markdown view.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status atual
 
-Plugin Obsidian **Binary Notes** funcional, primeira versão rodando. Plugin ID: `binary-notes`. Diretório do plugin: `obsidian-binary-props/` (legado do working title antigo). 61/61 testes passing, build clean.
+Plugin Obsidian **Notes for Anything** funcional, primeira versão. Plugin ID: `notes-for-anything`. 61/58 testes passing, build clean.
 
 ## Tese em uma linha
 
-> Binário (PDF, imagem, áudio, vídeo) abre como Folder Notes abre `.md` em pastas: opt-in por arquivo, sidecar `.md` companion conectado via frontmatter `binary: <path>`, click no binário abre o companion como **MarkdownView nativa** (Properties + body editáveis), botão de toggle bidirecional no header pra ir e voltar entre `.md` e binário cru.
+> Qualquer arquivo (PDF, imagem, áudio, vídeo) abre como Folder Notes abre `.md` em pastas: opt-in por arquivo, sidecar `.md` companion conectado via frontmatter `binary: <path>`, click no arquivo abre o companion como **MarkdownView nativa** (Properties + body editáveis), botão de toggle bidirecional no header pra ir e voltar entre `.md` e arquivo cru.
 
-## Arquitetura atual (refatorada — não é mais a do spec original)
+## Arquitetura
 
-A spec original (registro histórico em `obsidian-plugins-workbench/obsidian-binary-props/superpowers/specs/2026-04-27-binary-notes-design.md` — pasta-irmã do vault) descrevia uma `ItemView` custom com embed + body. **Foi refatorado** pra largar a custom view e usar MarkdownView nativa do Obsidian — Properties editáveis vêm de graça.
+A spec original descrevia uma `ItemView` custom com embed + body. **Foi refatorado** pra largar a custom view e usar MarkdownView nativa do Obsidian — Properties editáveis vêm de graça.
 
 ### Componentes vivos
 
@@ -24,15 +24,15 @@ A spec original (registro histórico em `obsidian-plugins-workbench/obsidian-bin
 | `src/intercept/viewSwapper.ts` | Fallback pra abertura fora do explorer (drag/drop, comando externo, wikilink). Exporta `swapBypass: WeakSet<WorkspaceLeaf>` pra outros módulos sinalizarem "não swap esse leaf" — usado pelo header action button |
 | `src/companion/companionHeaderActions.ts` | Adiciona action no header da view ativa: dentro do `.md` companion → "Open binary in viewer"; dentro do binário viewer (com companion) → "Open companion notes". Detecta tipo via path (não `instanceof View`). Cache `WeakMap<leaf, {el, targetPath}>` invalida quando target muda |
 | `src/explorer/explorerDecorator.ts` | Underline em binários com companion + hide companions via body class. MutationObserver pra lazy render do explorer |
-| `src/commands/commands.ts` | "Add Binary Notes" (cria companion idempotente + abre como MarkdownView). "Open binary in viewer" (palette equivalente do header action). Menu de contexto no `file-menu` |
+| `src/commands/commands.ts` | "Add companion note" (cria companion idempotente + abre como MarkdownView). "Open binary in viewer" (palette equivalente do header action). Menu de contexto no `file-menu` |
 | `src/settings/settingsTab.ts` + `src/settings/settings.ts` | Hide companions toggle + Companion template path |
 | `src/main.ts` | Wiring de tudo |
 
 ### Componentes órfãos (refator deixou pra trás — não apagar sem confirmar)
 
-- `src/view/binaryNotesView.ts` — a ItemView custom original (substituída por MarkdownView nativa)
+- `src/view/binaryNotesView.ts` (`NotesForAnythingView`) — a ItemView custom original (substituída por MarkdownView nativa)
 - `src/view/headerActions.ts` — header actions da view custom (substituído pelo `companionHeaderActions.ts`)
-- `BINARY_NOTES_VIEW_TYPE` em `src/constants.ts` — ainda registrado em `main.ts` pra evitar crash em workspace state restorado de versões antigas
+- `NFA_VIEW_TYPE` em `src/constants.ts` — ainda registrado em `main.ts` pra evitar crash em workspace state restorado de versões antigas
 
 ## Decisões assentadas
 
@@ -48,14 +48,14 @@ A spec original (registro histórico em `obsidian-plugins-workbench/obsidian-bin
 
 ```bash
 npm install        # primeira vez
-npm run dev        # esbuild watch + copy pro demo/.obsidian/plugins/binary-notes/
+npm run dev        # esbuild watch
 npm run build      # production build (gera main.js)
 npm test           # vitest watch mode
-npm test -- --run  # single pass (CI mode) — 61 testes
+npm test -- --run  # single pass (CI mode) — 58 testes
 npm run lint       # eslint flat config v9
 ```
 
-Hot-reload via plugin pjeby `hot-reload` instalado no demo vault — recompilou? plugin recarrega automaticamente.
+Distribuição: via BRAT (`mrlnlms/notes-for-anything`) até store release.
 
 ## Precedentes reaproveitados
 
@@ -63,37 +63,23 @@ Hot-reload via plugin pjeby `hot-reload` instalado no demo vault — recompilou?
 - **Folder Notes (LostPaul)** — body class hide + CSS cascata, MutationObserver com retry, click intercept capture phase
 - **Annotator (elias-sundqvist)** — pattern de YAML linking (`binary: <path>`)
 
-## Gotchas aplicáveis (Qualia `docs/TECHNICAL-PATTERNS.md`)
+## Gotchas aplicáveis
 
-- §8.6 — `active-leaf-change` em vez de `registerExtensions` (aplicado em `viewSwapper`)
-- §8.8 — WeakSet pra evitar double-instrumentation (`viewSwapper.swapping` + exportado `swapBypass`)
-- §19.5 — Detach manual de `view.addAction` (aplicado em `companionHeaderActions` via `WeakMap<leaf, ButtonState>`)
-- §1.12 — MutationObserver self-suppression (não aplicável aqui — `ExplorerDecorator` só lê)
-- §8.3 — `instanceof FileView` antes de operar em leaf — **aviso**: PDF/image views nem sempre extendem FileView no runtime real. `companionHeaderActions` detecta via `view.file` direto (não instanceof) por isso.
+- `active-leaf-change` em vez de `registerExtensions` (aplicado em `viewSwapper`)
+- WeakSet pra evitar double-instrumentation (`viewSwapper.swapping` + exportado `swapBypass`)
+- Detach manual de `view.addAction` (aplicado em `companionHeaderActions` via `WeakMap<leaf, ButtonState>`)
+- `instanceof FileView` antes de operar em leaf — **aviso**: PDF/image views nem sempre extendem FileView no runtime real. `companionHeaderActions` detecta via `view.file` direto (não instanceof) por isso
 
 ## Convenções operacionais
 
 - **Commits**: sempre via `~/.claude/scripts/commit.sh "mensagem"`. Conventional commits em pt-br (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`). Sem emoji. Sem `Co-Authored-By` (o script bloqueia)
 - **NÃO apagar arquivos** sem autorização literal e explícita do usuário (regra global). Mesmo arquivos órfãos do refator — pedir antes
-- **Filosofia de coexistência**: Binary Notes é a camada de cidadania binária. Especialistas (PDF++, Media Notes, Excalidraw, ePub Reader) continuam fazendo a anotação fina. Não competir, integrar
+- **Filosofia de coexistência**: o plugin é a camada de cidadania binária. Especialistas (PDF++, Media Notes, Excalidraw, ePub Reader) continuam fazendo a anotação fina. Não competir, integrar
 - **Manual tests** (`docs/MANUAL-TESTS.md`): rodar em vault real após mudanças significativas — mocks vitest+jsdom não pegam bugs de runtime real (PDF.js, MarkdownView, etc)
-
-## Próximo passo
-
-**Checkpoint runtime do fix `last writer wins + registry como fonte de verdade`** (commits `919c7a4` + `e70235d`). Mocks vitest passam, mas o ganho do fix só aparece em vault real:
-
-1. Rodar **S6 (rename do binário)** do `MANUAL-TESTS.md` no demo vault — confirmar que o `binary:` no companion atualiza pelos 3 caminhos (F2, menu, drag)
-2. Cenário novo, fora do MANUAL-TESTS: criar companion **fora do naming default** (ex.: `notas/sobre-paper.md` com `binary: "paper.pdf"` no frontmatter, em vez de `paper.pdf.md` ao lado). Validar:
-   - Header action "Open binary in viewer" aparece dentro do `.md`
-   - Renomear esse `.md` propaga corretamente no índice
-   - Deletar esse `.md` limpa o registry
-3. Cenário do caso patológico: criar dois `.md` apontando pro mesmo binário (manualmente). Confirmar que só um vira companion ativo (hide + header action) e o outro fica como nota normal
-
-Se passar nos 3, considerar adicionar como S11/S12 no `MANUAL-TESTS.md`.
 
 ## Tópicos abertos
 
-- BinaryNotesView e headerActions órfãos: remover quando confirmado que ninguém precisa
+- `NotesForAnythingView` (em `binaryNotesView.ts`) e `headerActions.ts` órfãos: remover quando confirmado que ninguém precisa
 - Embeds `![[arquivo.pdf]]` em outras notas: usam viewer nativo do Obsidian (não a custom view, que não existe mais)
 - Backlinks panel: aparece nativo no MarkdownView do companion. Se quiser unificar com backlinks do binário cru, é design dedicado
 - Coexistência específica com PDF++: bypass condicional via setting se demandar
@@ -104,19 +90,3 @@ Docs versionados (no repo):
 - `CLAUDE.md` — instruções/contexto pra Claude Code (raiz)
 - `README.md` — público no GitHub (raiz)
 - `docs/MANUAL-TESTS.md` — cenários de teste manual em vault real
-
-Docs não-versionados (fora do repo, em `obsidian-plugins-workbench/obsidian-binary-props/`):
-- `discovery/` — discovery docs e raciocínio inicial (registro histórico)
-- `superpowers/plans/` — plans gerados por skill (`superpowers:writing-plans` etc)
-- `superpowers/specs/` — specs gerados por skill (`superpowers:brainstorming`, design)
-
-**Regra:** specs e plans gerados por skills moram FORA do repo, na pasta-irmã do vault. Repo só versiona docs estáveis do projeto.
-
-## Plugins paralelos / spike / PoC
-
-Se uma sessão neste projeto gerar necessidade de criar um plugin Obsidian separado (PoC de viabilidade, spike, plugin novo), e o trabalho estiver no vault `obsidian-plugins-workbench` (bancada local), o layout segue regra fixa:
-
-- **Código** → `.obsidian/plugins/<plugin-id>/` (com `.git` próprio, repo `mrlnlms/<plugin-id>` no GitHub)
-- **Docs / history / research / notas de teste** → `obsidian-plugins-workbench/<plugin-id>/` (parte do vault, fora do repo do plugin)
-
-Detalhes: ver `obsidian-plugins-workbench/.claude/CLAUDE.md` (CLAUDE.md do vault).

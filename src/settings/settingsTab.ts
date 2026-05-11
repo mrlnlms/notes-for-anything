@@ -1,9 +1,9 @@
 // src/settings/settingsTab.ts
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import type BinaryNotesPlugin from '../main';
+import type NotesForAnythingPlugin from '../main';
 
-export class BinaryNotesSettingsTab extends PluginSettingTab {
-  constructor(app: App, private plugin: BinaryNotesPlugin) {
+export class NotesForAnythingSettingsTab extends PluginSettingTab {
+  constructor(app: App, private plugin: NotesForAnythingPlugin) {
     super(app, plugin);
   }
 
@@ -29,11 +29,11 @@ export class BinaryNotesSettingsTab extends PluginSettingTab {
       .setName('Companion template')
       .setDesc(
         'Optional path to a `.md` file used as initial body when a new companion is created. ' +
-        'Frontmatter from the template is stripped — Binary Notes prepends its own `binary:` key.',
+        'Frontmatter from the template is stripped — the plugin prepends its own `binary:` key.',
       )
       .addText((text) =>
         text
-          .setPlaceholder('Templates/binary-companion.md')
+          .setPlaceholder('Templates/companion-note.md')
           .setValue(this.plugin.settings.companionTemplatePath)
           .onChange(async (value) => {
             this.plugin.settings.companionTemplatePath = value;

@@ -1,20 +1,20 @@
 // src/main.ts
 import { Plugin, WorkspaceLeaf } from 'obsidian';
 
-import { BINARY_NOTES_VIEW_TYPE } from './constants';
-import { DEFAULT_SETTINGS, BinaryNotesSettings } from './settings/settings';
-import { BinaryNotesSettingsTab } from './settings/settingsTab';
+import { NFA_VIEW_TYPE } from './constants';
+import { DEFAULT_SETTINGS, NotesForAnythingSettings } from './settings/settings';
+import { NotesForAnythingSettingsTab } from './settings/settingsTab';
 import { CompanionRegistry } from './registry/companionRegistry';
 import { VaultLifecycleHandler } from './lifecycle/vaultLifecycleHandler';
 import { ClickInterceptor } from './intercept/clickInterceptor';
 import { ViewSwapper } from './intercept/viewSwapper';
 import { ExplorerDecorator } from './explorer/explorerDecorator';
-import { BinaryNotesView } from './view/binaryNotesView';
+import { NotesForAnythingView } from './view/binaryNotesView';
 import { registerCommands } from './commands/commands';
 import { registerCompanionHeaderActions } from './companion/companionHeaderActions';
 
-export default class BinaryNotesPlugin extends Plugin {
-  settings!: BinaryNotesSettings;
+export default class NotesForAnythingPlugin extends Plugin {
+  settings!: NotesForAnythingSettings;
   registry!: CompanionRegistry;
   lifecycle!: VaultLifecycleHandler;
   clickInterceptor!: ClickInterceptor;
@@ -29,8 +29,8 @@ export default class BinaryNotesPlugin extends Plugin {
     this.registry.initialize();
 
     // View registrada ANTES dos interceptors que tentam abri-la (evita race)
-    this.registerView(BINARY_NOTES_VIEW_TYPE, (leaf: WorkspaceLeaf) =>
-      new BinaryNotesView(leaf, this.registry),
+    this.registerView(NFA_VIEW_TYPE, (leaf: WorkspaceLeaf) =>
+      new NotesForAnythingView(leaf, this.registry),
     );
 
     // Lifecycle: rename/delete cascade
@@ -53,7 +53,7 @@ export default class BinaryNotesPlugin extends Plugin {
 
     // Comandos e UI
     registerCommands(this, this.app, this.registry, () => this.settings);
-    this.addSettingTab(new BinaryNotesSettingsTab(this.app, this));
+    this.addSettingTab(new NotesForAnythingSettingsTab(this.app, this));
   }
 
   onunload(): void {

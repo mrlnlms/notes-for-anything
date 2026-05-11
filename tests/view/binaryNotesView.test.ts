@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPlugin } from '../pluginFactory';
 import { CompanionRegistry } from '../../src/registry/companionRegistry';
-import { BinaryNotesView } from '../../src/view/binaryNotesView';
-import { BINARY_NOTES_VIEW_TYPE } from '../../src/constants';
+import { NotesForAnythingView } from '../../src/view/binaryNotesView';
+import { NFA_VIEW_TYPE } from '../../src/constants';
 import { MarkdownRenderer } from '../obsidian.mock';
 
-describe('BinaryNotesView', () => {
+describe('NotesForAnythingView', () => {
   let plugin: ReturnType<typeof createPlugin>;
   let registry: CompanionRegistry;
   let leaf: any;
@@ -21,19 +21,19 @@ describe('BinaryNotesView', () => {
   });
 
   it('expõe view type correto', () => {
-    const view = new BinaryNotesView(leaf, registry);
-    expect(view.getViewType()).toBe(BINARY_NOTES_VIEW_TYPE);
+    const view = new NotesForAnythingView(leaf, registry);
+    expect(view.getViewType()).toBe(NFA_VIEW_TYPE);
   });
 
   it('display name reflete companion carregado', async () => {
-    const view = new BinaryNotesView(leaf, registry);
+    const view = new NotesForAnythingView(leaf, registry);
     await view.setState({ companionPath: 'paper.pdf.md' }, { history: false });
     expect(view.getDisplayText()).toContain('paper.pdf');
   });
 
   it('renderiza embed do binário e body do companion via MarkdownRenderer', async () => {
     const renderSpy = vi.spyOn(MarkdownRenderer, 'render');
-    const view = new BinaryNotesView(leaf, registry);
+    const view = new NotesForAnythingView(leaf, registry);
     await view.setState({ companionPath: 'paper.pdf.md' }, { history: false });
     await view.onOpen();
 
@@ -44,7 +44,7 @@ describe('BinaryNotesView', () => {
   });
 
   it('lida graciosamente com companion deletado durante view aberta', async () => {
-    const view = new BinaryNotesView(leaf, registry);
+    const view = new NotesForAnythingView(leaf, registry);
     await view.setState({ companionPath: 'paper.pdf.md' }, { history: false });
     await view.onOpen();
 
@@ -57,7 +57,7 @@ describe('BinaryNotesView', () => {
   });
 
   it('detach manual previne duplicação em hot-reload', async () => {
-    const view = new BinaryNotesView(leaf, registry);
+    const view = new NotesForAnythingView(leaf, registry);
     await view.setState({ companionPath: 'paper.pdf.md' }, { history: false });
     await view.onOpen();
     expect(leaf.__getActions().length).toBe(1); // após primeiro mount, exatamente 1 action

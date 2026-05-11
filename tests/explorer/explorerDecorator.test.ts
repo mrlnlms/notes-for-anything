@@ -10,7 +10,7 @@ describe('ExplorerDecorator', () => {
     document.body.className = '';
   });
 
-  it('aplica classe has-binary-companion no item do binário', async () => {
+  it('aplica classe has-nfa-companion no item do binário', async () => {
     const plugin = createPlugin();
     const registry = new CompanionRegistry(plugin.app as any);
     plugin.app.vault.__setFile('paper.pdf', undefined, 'binary');
@@ -31,7 +31,7 @@ describe('ExplorerDecorator', () => {
     expect(item.classList.contains(CSS_CLASSES.itemHasCompanion)).toBe(true);
   });
 
-  it('marca companion com is-binary-companion quando não tem visible:true', async () => {
+  it('marca companion com is-nfa-companion quando não tem visible:true', async () => {
     const plugin = createPlugin();
     const registry = new CompanionRegistry(plugin.app as any);
     plugin.app.vault.__setFile('paper.pdf', undefined, 'binary');

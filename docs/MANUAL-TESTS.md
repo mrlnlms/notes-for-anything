@@ -3,13 +3,13 @@
 Roda em vault real (Obsidian aberto, `npm run dev` ativo, plugin habilitado).
 
 ## Setup
-1. Vault zerado (ou o do dev — `obsidian-plugins-workbench`)
+1. Vault zerado (ou um vault de uso real onde o plugin foi instalado via BRAT)
 2. Adicionar arquivos: `paper.pdf`, `img.png`, `song.mp3`, `clip.mp4`
 
 ## Cenários
 
 ### S1 — Criação de companion
-- [ ] Right-click em `paper.pdf` → menu mostra "Add Binary Notes"
+- [ ] Right-click em `paper.pdf` → menu mostra "Add companion note"
 - [ ] Click → companion `paper.pdf.md` é criado ao lado, frontmatter `binary: "paper.pdf"` (double-quoted)
 - [ ] Companion abre como **MarkdownView nativa**: painel Properties (binary editável) + body vazio
 - [ ] No painel Properties, "Add property" funciona (criar `tags`, `aliases`, custom keys etc)
@@ -57,7 +57,7 @@ Em cada caminho:
 
 ### S9 — Coexistência com PDF++
 - [ ] Instalar PDF++
-- [ ] Click em `paper.pdf` no explorer → companion `.md` abre (Binary Notes ganha via capture phase)
+- [ ] Click em `paper.pdf` no explorer → companion `.md` abre (Notes for Anything ganha via capture phase)
 - [ ] Botão "Open binary in viewer" → PDF++ assume (porque é o default registrado pra `.pdf`)
 - [ ] Botão "Open companion notes" no header do PDF++ ainda funciona — volta pro `.md`
 - [ ] **Caso não coberto pelo intercept:** se o usuário invoca um comando próprio do PDF++ (ex.: "PDF++: Open PDF in new tab"), o fluxo do PDF++ assume direto. Comportamento aceitável (usuário escolheu o caminho específico do PDF++)
@@ -68,11 +68,11 @@ Em cada caminho:
 
 ### S11 — Paths com whitespace múltiplo / chars especiais
 - [ ] Adicionar binário com nome contendo 2+ espaços consecutivos (ex.: `(2008) International  Handbook.pdf`)
-- [ ] "Add Binary Notes" → companion criado com `binary: "..."` quoted preservando espaços
+- [ ] "Add companion note" → companion criado com `binary: "..."` quoted preservando espaços
 - [ ] Click no binário abre o `.md` companion sem erro "Binary not found"
 
 ### S12 — Caso patológico: múltiplos `.md` apontando pro mesmo binário
-Regra: **um companion por binário**. Plugin previne via "Add Binary Notes". Caso o user edite manualmente um `.md` random pra ter `binary: paper.pdf` enquanto já existe `paper.pdf.md`:
+Regra: **um companion por binário**. Plugin previne via "Add companion note". Caso o user edite manualmente um `.md` random pra ter `binary: paper.pdf` enquanto já existe `paper.pdf.md`:
 - [ ] Last writer wins — o `.md` cuja sincronização foi mais recente vira o ativo
 - [ ] Sem warning ruidoso, sem tie-break — comportamento determinístico apenas pelo timing
 - [ ] Click em `paper.pdf` abre o ativo. O `.md` "perdedor" continua existindo no vault como nota normal apontando pro mesmo binário, mas não é o que abre via click

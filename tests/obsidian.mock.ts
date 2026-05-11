@@ -148,7 +148,7 @@ export interface EventRef {}
 
 export class Plugin extends Component {
   app: any;
-  manifest: any = { id: 'binary-notes', name: 'Binary Notes', version: '0.1.0' };
+  manifest: any = { id: 'notes-for-anything', name: 'Notes for Anything', version: '0.1.0' };
   constructor(app: any, manifest: any) {
     super();
     this.app = app;

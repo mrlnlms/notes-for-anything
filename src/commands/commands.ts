@@ -3,22 +3,22 @@ import { App, Notice, Plugin, TFile, Menu } from 'obsidian';
 import { isSupportedBinary, defaultCompanionPath } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 import {
-  CMD_ADD_BINARY_NOTES,
+  CMD_ADD_COMPANION_NOTE,
   CMD_TOGGLE_SOURCE,
   FM_KEY_BINARY,
 } from '../constants';
-import type { BinaryNotesSettings } from '../settings/settings';
+import type { NotesForAnythingSettings } from '../settings/settings';
 
 export function registerCommands(
   plugin: Plugin,
   app: App,
   registry: CompanionRegistry,
-  getSettings: () => BinaryNotesSettings,
+  getSettings: () => NotesForAnythingSettings,
 ): void {
-  // Comando "Add Binary Notes" — acessível via menu de contexto e palette
+  // Comando "Add companion note" — acessível via menu de contexto e palette
   plugin.addCommand({
-    id: CMD_ADD_BINARY_NOTES,
-    name: 'Add Binary Notes',
+    id: CMD_ADD_COMPANION_NOTE,
+    name: 'Add companion note',
     checkCallback: (checking) => {
       const file = app.workspace.getActiveFile();
       const ok = file !== null && isSupportedBinary(file.path);
@@ -55,7 +55,7 @@ export function registerCommands(
       if (!isSupportedBinary(file.path)) return;
       menu.addItem((item) => {
         item
-          .setTitle(registry.hasCompanion(file.path) ? 'Open Binary Notes' : 'Add Binary Notes')
+          .setTitle(registry.hasCompanion(file.path) ? 'Open companion note' : 'Add companion note')
           .setIcon('file-symlink')
           .onClick(() => void addOrOpen(app, registry, getSettings, file));
       });
@@ -66,7 +66,7 @@ export function registerCommands(
 async function addOrOpen(
   app: App,
   registry: CompanionRegistry,
-  getSettings: () => BinaryNotesSettings,
+  getSettings: () => NotesForAnythingSettings,
   binaryFile: TFile,
 ): Promise<void> {
   let companionPath = registry.getCompanionFor(binaryFile.path);
