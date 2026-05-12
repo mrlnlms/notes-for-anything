@@ -78,6 +78,8 @@ Clicking or opening a binary that has a companion always lands you on the `.md` 
 | Search panel click | View swapper | same |
 | Embed `![[paper.pdf]]` inline | **Not intercepted** | Embeds don't change the active leaf, and inline preview of the binary is usually what you want |
 
+Every path that goes through the **view swapper** (everything except the explorer click) opens the native binary viewer first and swaps to the companion right after — there's a brief flash of the binary before the `.md` takes over. Only the file explorer click avoids this, because it intercepts in the capture phase before any viewer mounts.
+
 ## Header action buttons
 
 The companion `.md` and the binary viewer both expose a header action button to toggle between them:
@@ -138,6 +140,20 @@ PDF, PNG/JPG/GIF/SVG/WEBP, MP3/M4A/WAV/OGG/FLAC, MP4/WEBM/MOV/MKV.
 EPUB is out of scope (delegated to the [ePub Reader](https://github.com/caronchen/obsidian-epub-reader) plugin).
 
 ## Known limitations
+
+### Backlinks: notes that link `[[paper.pdf]]` don't show up in the companion's panel
+
+Obsidian indexes backlinks by the actual link target. A wikilink `[[paper.pdf]]` in some other note resolves to the **binary**, not to the companion `paper.pdf.md`, so:
+
+- The binary's backlinks panel shows everyone who links the PDF — including the companion (because of the wikilink in `binary:`).
+- The companion's backlinks panel **does not** show notes that link `[[paper.pdf]]`. It only sees notes that link the companion `.md` directly.
+- "Unlinked mentions" in the companion's panel may pick up text matches, but linked backlinks won't appear.
+
+If you want a backlink to count toward the companion, link it directly: `[[paper.pdf.md]]`. You lose the "open the binary" affordance through that wikilink, but the graph stays consistent.
+
+### Brief flash on non-explorer open paths
+
+See the note in [Navigation](#navigation). Quick switcher, bookmark click, search-result wikilink, backlinks panel click, etc., all show the binary viewer for a fraction of a second before the swap. Only file explorer click is flash-free.
 
 ### Rename via filesystem (Finder/Explorer) is treated as delete + create
 
