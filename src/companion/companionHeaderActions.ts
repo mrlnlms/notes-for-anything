@@ -43,6 +43,14 @@ export function registerCompanionHeaderActions(
   plugin.registerEvent(app.workspace.on('layout-change', () => refresh()));
   plugin.registerEvent(app.workspace.on('active-leaf-change', () => refresh()));
 
+  // Cleanup no unload: percorre as leaves vivas e remove os botões DOM criados
+  // por view.addAction. Sem isso, recarregar o plugin (hot-reload em dev, ou
+  // disable/enable manual) deixa os elementos órfãos no header e o novo módulo
+  // adiciona um segundo por cima — duplicação visível.
+  plugin.register(() => {
+    app.workspace.iterateAllLeaves((leaf) => detachButton(leaf));
+  });
+
   app.workspace.onLayoutReady(() => refresh());
 }
 
