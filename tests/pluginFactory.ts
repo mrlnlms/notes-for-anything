@@ -76,6 +76,7 @@ export interface FakeVault {
 export interface FakeMetadataCache {
   getFileCache: Mock;
   getCache: Mock;
+  getFirstLinkpathDest: Mock;
   on: (event: string, handler: (...args: any[]) => any) => any;
   off: (event: string, handler: (...args: any[]) => any) => void;
   offref: (ref: any) => void;
@@ -90,6 +91,7 @@ export interface FakeWorkspace {
   getLeavesOfType: Mock;
   getActiveViewOfType: Mock;
   onLayoutReady: Mock;
+  iterateAllLeaves: Mock;
   on: (event: string, handler: (...args: any[]) => any) => any;
   off: (event: string, handler: (...args: any[]) => any) => void;
   offref: (ref: any) => void;
@@ -98,7 +100,10 @@ export interface FakeWorkspace {
   __createLeaf(): any;
   __createLeafWithFile(path: string, viewType: string): any;
   __createLeafWithViewType(viewType: string): any;
+  __registerLeaf(leaf: any): void;
   __triggerActiveLeafChange(leaf: any): void;
+  __triggerLayoutChange(): void;
+  __triggerFileOpen(file: TFile | null): void;
   __getLastSetViewState(): { type: string; state: any } | null;
   __resetSetViewStateLog(): void;
   __setActiveFile(path: string): void;
@@ -107,6 +112,7 @@ export interface FakeWorkspace {
 export interface FakeFileManager {
   processFrontMatter: Mock;
   renameFile: Mock;
+  trashFile: Mock;
   __mockProcessFrontMatter(path: string, fmRef: Record<string, unknown>): void;
 }
 
@@ -124,6 +130,7 @@ export interface FakePlugin {
   __commands: Map<string, any>;
   __layoutReadyCallbacks: Array<() => void>;
   addCommand: ReturnType<typeof vi.fn>;
+  register: ReturnType<typeof vi.fn>;
   registerEvent: ReturnType<typeof vi.fn>;
   registerDomEvent: ReturnType<typeof vi.fn>;
   registerInterval: ReturnType<typeof vi.fn>;
@@ -133,6 +140,7 @@ export interface FakePlugin {
   saveData: ReturnType<typeof vi.fn>;
   __runCommand: (commandId: string) => any;
   __unloadDomEvents: () => void;
+  __triggerUnload: () => void;
 }
 
 function makeAddAction(actions: HTMLElement[], host: HTMLElement) {
@@ -275,6 +283,21 @@ export function createPlugin(): FakePlugin {
       if (!entry) return null;
       return { frontmatter: entry.frontmatter };
     }),
+    getFirstLinkpathDest: vi.fn((linkpath: string, _sourcePath: string): TFile | null => {
+      // 1. Exact path match
+      const exact = vaultFiles.get(linkpath);
+      if (exact) return exact.file;
+      // 2. Try with .md extension (Obsidian's default for notes)
+      const withMd = vaultFiles.get(`${linkpath}.md`);
+      if (withMd) return withMd.file;
+      // 3. Basename match (last one wins, consistent with Obsidian's "first found" rule when unique)
+      const targetName = linkpath.split('/').pop() ?? linkpath;
+      for (const entry of vaultFiles.values()) {
+        if (entry.file.name === targetName) return entry.file;
+        if (entry.file.basename === targetName) return entry.file;
+      }
+      return null;
+    }),
 
     // ===== Helpers de teste =====
     __triggerChanged(path: string): void {
@@ -285,6 +308,10 @@ export function createPlugin(): FakePlugin {
   };
 
   // ===== Workspace e leafs =====
+  // Conjunto de leaves vivas — usado por iterateAllLeaves. Leaves criadas via
+  // __createLeaf*/createLeafWithFile entram aqui automaticamente.
+  const allLeaves = new Set<any>();
+
   // Cria leaf virtual mínima — `view` começa null, `setViewState` registra no log e
   // mantém um stub de view com `addAction` que pendura elements no array `__actions`.
   function createLeaf(): any {
@@ -315,6 +342,7 @@ export function createPlugin(): FakePlugin {
       __actions: actions,
       __actionsHost: actionsHost,
     };
+    allLeaves.add(leaf);
     return leaf;
   }
 
@@ -355,6 +383,9 @@ export function createPlugin(): FakePlugin {
     onLayoutReady: vi.fn((cb: () => void) => {
       layoutReadyCallbacks.push(cb);
     }),
+    iterateAllLeaves: vi.fn((cb: (leaf: any) => void) => {
+      for (const leaf of allLeaves) cb(leaf);
+    }),
 
     // ===== Helpers de teste =====
     async __triggerLayoutReady(): Promise<void> {
@@ -371,8 +402,17 @@ export function createPlugin(): FakePlugin {
     __createLeafWithViewType(viewType: string): any {
       return createLeafWithViewType(viewType);
     },
+    __registerLeaf(leaf: any): void {
+      allLeaves.add(leaf);
+    },
     __triggerActiveLeafChange(leaf: any): void {
       workspaceBus.trigger('active-leaf-change', leaf);
+    },
+    __triggerLayoutChange(): void {
+      workspaceBus.trigger('layout-change');
+    },
+    __triggerFileOpen(file: TFile | null): void {
+      workspaceBus.trigger('file-open', file);
     },
     __getLastSetViewState(): { type: string; state: any } | null {
       if (setViewStateLog.length === 0) return null;
@@ -410,6 +450,9 @@ export function createPlugin(): FakePlugin {
       entry.file = newFile;
       vaultFiles.set(newPath, entry);
     }),
+    trashFile: vi.fn(async (file: TAbstractFile): Promise<void> => {
+      vaultFiles.delete(file.path);
+    }),
 
     // ===== Helpers de teste =====
     __mockProcessFrontMatter(path: string, fmRef: Record<string, unknown>): void {
@@ -431,6 +474,7 @@ export function createPlugin(): FakePlugin {
 
   const commands = new Map<string, any>();
   const domEventCleanups: Array<() => void> = [];
+  const unloadCallbacks: Array<() => void> = [];
 
   const plugin: FakePlugin = {
     app,
@@ -439,6 +483,9 @@ export function createPlugin(): FakePlugin {
     __layoutReadyCallbacks: layoutReadyCallbacks,
     addCommand: vi.fn((cmd: any) => {
       commands.set(cmd.id, cmd);
+    }),
+    register: vi.fn((cb: () => void) => {
+      unloadCallbacks.push(cb);
     }),
     registerEvent: vi.fn((_ref: EventRef) => {}),
     registerDomEvent: vi.fn((target: any, event: string, handler: any, _capture?: boolean) => {
@@ -453,6 +500,16 @@ export function createPlugin(): FakePlugin {
     __unloadDomEvents(): void {
       while (domEventCleanups.length > 0) {
         const fn = domEventCleanups.pop();
+        try {
+          fn?.();
+        } catch {
+          // noop
+        }
+      }
+    },
+    __triggerUnload(): void {
+      while (unloadCallbacks.length > 0) {
+        const fn = unloadCallbacks.pop();
         try {
           fn?.();
         } catch {
