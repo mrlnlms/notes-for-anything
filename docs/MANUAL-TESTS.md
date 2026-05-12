@@ -77,3 +77,37 @@ Regra: **um companion por binário**. Plugin previne via "Add companion note". C
 - [ ] Sem warning ruidoso, sem tie-break — comportamento determinístico apenas pelo timing
 - [ ] Click em `paper.pdf` abre o ativo. O `.md` "perdedor" continua existindo no vault como nota normal apontando pro mesmo binário, mas não é o que abre via click
 - [ ] Rename/delete do binário só afeta o ativo. Companion não-ativo fica órfão (responsabilidade do user limpar)
+
+## Cenários de cobertura de caminhos (S13-S16)
+
+Objetivo: validar que a **camada 2 (ViewSwapper via `active-leaf-change`)** cobre todos os caminhos além do file explorer click. Esperado em todos: ViewSwapper detecta a leaf abrindo o binário e troca pelo `.md` companion. Se algum cenário abrir o PDF cru sem trocar, é bug.
+
+### S13 — Quick switcher abre binário → ViewSwapper troca pelo `.md`
+Setup: `paper.pdf` + `paper.pdf.md` existem.
+- [ ] Cmd/Ctrl+O → digita `paper.pdf` → Enter
+- [ ] Resultado esperado: **abre o companion `paper.pdf.md`** (MarkdownView), NÃO o PDF cru
+- [ ] Se abrir o PDF e depois trocar pro `.md` com flash visível, anotar (é aceitável mas vale registrar)
+
+### S14 — Bookmark do binário → ViewSwapper troca pelo `.md`
+- [ ] Right-click em `paper.pdf` no explorer → **Bookmark** (cria bookmark)
+- [ ] Abrir o Bookmarks panel (sidebar) → click no bookmark de `paper.pdf`
+- [ ] Resultado esperado: abre o companion `paper.pdf.md`
+- [ ] Anotar se houve flash do PDF antes de trocar
+
+### S15 — Search panel: click em resultado leva ao wikilink → troca pelo `.md`
+Setup:
+1. Criar nota `links.md` com conteúdo `[[paper.pdf]]` e algum texto único, ex.: `linkin-park-pdf-ref`
+- [ ] Cmd/Ctrl+Shift+F (Search panel) → busca por `linkin-park-pdf-ref`
+- [ ] Click no resultado abre `links.md`
+- [ ] No `links.md`, click no link `[[paper.pdf]]`
+- [ ] Resultado esperado: abre o companion `paper.pdf.md` (não o PDF)
+
+### S16 — Backlinks panel → ViewSwapper troca pelo `.md`
+Setup: existe `references.md` com `[[paper.pdf]]` no body.
+- [ ] Abrir `references.md`
+- [ ] Abrir Backlinks panel (sidebar direita) — irrelevante pra esse teste
+- [ ] No `references.md`, abrir **Outline / Links panel** ou usar **Cmd/Ctrl+click no `[[paper.pdf]]`** pra simular click de backlink panel
+- [ ] Alternativa mais limpa: criar `nota-A.md` com `[[paper.pdf]]`, abrir `paper.pdf.md` (companion), na sidebar Backlinks panel aparece `nota-A.md` apontando pro PDF → click no backlink abre `nota-A.md`, depois click no link `[[paper.pdf]]` lá dentro
+- [ ] Resultado esperado: companion abre via wikilink (camada 2)
+
+**Observação sobre Backlinks panel**: o caminho mais comum é "ver lista de notas que referenciam o PDF". Esse aparece no Backlinks panel da **própria PDF view** ou do **companion `.md`**. Validar se o link nesse panel, quando clicado, leva à nota que referencia (esperado: sim, abre a nota normal).
