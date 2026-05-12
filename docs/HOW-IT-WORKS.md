@@ -117,8 +117,8 @@ Binaries that have a companion show a dotted underline in the file explorer. Vis
 
 ## Rename and delete cascade
 
-- **Rename binary**: the `binary:` field in the companion is updated automatically. Works across all rename paths — F2, context menu, drag to another folder.
-- **Delete binary**: the companion is removed (silently, no prompt).
+- **Rename binary (inside Obsidian)**: the `binary:` field in the companion is updated automatically. Works across all internal rename paths — F2, context menu, drag to another folder.
+- **Delete binary**: the companion is sent to the **Trash** (via `fileManager.trashFile`, which respects your Files & Links → Deleted files preference: system trash or local `.trash/`). Recoverable, not destroyed.
 - **Rename or delete companion**: no cascade. The binary is untouched. If you delete the companion, the binary goes back to opening in its native viewer on click.
 
 ## Coexistence with PDF++
@@ -136,3 +136,16 @@ Not covered by the intercept: if you invoke a PDF++-specific command (e.g., "PDF
 PDF, PNG/JPG/GIF/SVG/WEBP, MP3/M4A/WAV/OGG/FLAC, MP4/WEBM/MOV/MKV.
 
 EPUB is out of scope (delegated to the [ePub Reader](https://github.com/caronchen/obsidian-epub-reader) plugin).
+
+## Known limitations
+
+### Rename via filesystem (Finder/Explorer) is treated as delete + create
+
+When you rename a binary **outside** Obsidian (e.g., via Finder), Obsidian's vault watcher doesn't always identify it as a rename. For small/large files where its internal matching fails, the event surfaces as `delete(oldPath)` followed by `create(newPath)` — not as a `rename`.
+
+The plugin cascades the delete to the companion, but **sends it to the Trash** (not permanent destruction) precisely to make this case recoverable:
+
+- The renamed binary keeps its name and is now untracked (no companion).
+- The original companion sits in the Trash. You can restore it manually and update its `binary:` to point to the new path.
+
+If you need rename tracking from outside the app, prefer Obsidian's native rename (F2, drag, context menu) — those always go through `vault.on('rename')` and update the companion frontmatter automatically.

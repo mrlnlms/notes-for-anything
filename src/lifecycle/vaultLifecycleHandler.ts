@@ -68,13 +68,16 @@ export class VaultLifecycleHandler {
       return;
     }
 
-    // Binário deletado → cascade no companion
+    // Binário deletado → cascade no companion.
+    // Usa trashFile (não delete) pra mandar pra Lixeira do sistema/local: rename via
+    // FS externo é interpretado pelo Obsidian como delete+create sem matching, e
+    // cairia aqui destruindo o companion permanentemente. Trash deixa recuperável.
     if (isSupportedBinary(file.path)) {
       const companionPath = this.registry.getCompanionFor(file.path);
       if (!companionPath) return;
       const companionFile = this.app.vault.getAbstractFileByPath(companionPath);
       if (companionFile instanceof TFile) {
-        await this.app.vault.delete(companionFile);
+        await this.app.fileManager.trashFile(companionFile);
       }
     }
   }

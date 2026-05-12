@@ -46,16 +46,18 @@ describe('VaultLifecycleHandler', () => {
   });
 
   describe('delete do binário', () => {
-    it('cascata: deleta o companion silenciosamente', async () => {
+    it('cascata: manda o companion pra Lixeira via trashFile (recuperável)', async () => {
+      const trashSpy = vi.spyOn(plugin.app.fileManager, 'trashFile');
       const deleteSpy = vi.spyOn(plugin.app.vault, 'delete');
       await plugin.app.vault.__triggerDelete('paper.pdf');
-      expect(deleteSpy).toHaveBeenCalledWith(expect.objectContaining({ path: 'paper.pdf.md' }));
+      expect(trashSpy).toHaveBeenCalledWith(expect.objectContaining({ path: 'paper.pdf.md' }));
+      expect(deleteSpy).not.toHaveBeenCalled();
     });
 
     it('não toca o binário quando o companion é deletado (não cascateia reverso)', async () => {
-      const deleteSpy = vi.spyOn(plugin.app.vault, 'delete');
+      const trashSpy = vi.spyOn(plugin.app.fileManager, 'trashFile');
       await plugin.app.vault.__triggerDelete('paper.pdf.md');
-      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(trashSpy).not.toHaveBeenCalled();
     });
   });
 
