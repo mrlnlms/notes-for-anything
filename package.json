@@ -1,6 +1,6 @@
 {
   "name": "notes-for-anything",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pair any file (PDF, image, audio, video) with a sidecar markdown note opened as a native Obsidian markdown view.",
   "main": "main.js",
   "scripts": {

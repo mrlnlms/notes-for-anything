@@ -1,7 +1,7 @@
 {
   "id": "notes-for-anything",
   "name": "Notes for Anything",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.6.7",
   "description": "Pair any file (PDF, image, audio, video) with a sidecar markdown note. Clicking the file opens its companion note as a native Obsidian markdown view — Properties, body, backlinks all work as-is.",
   "author": "Marlon Lemes",
