@@ -2,6 +2,10 @@ import { App, Plugin, TFile } from 'obsidian';
 import { isSupportedBinary } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 
+interface SettingsGetter {
+  (): { hideCompanions: boolean };
+}
+
 export class ClickInterceptor {
   private listener: ((evt: MouseEvent) => void) | null = null;
 
@@ -9,6 +13,7 @@ export class ClickInterceptor {
     private app: App,
     private registry: CompanionRegistry,
     private plugin: Plugin,
+    private getSettings: SettingsGetter,
   ) {}
 
   initialize(): void {
@@ -22,6 +27,11 @@ export class ClickInterceptor {
   }
 
   private handle(evt: MouseEvent): void {
+    // hide=OFF significa "navegar normal" — companion fica visível no explorer e
+    // o click no binário abre o viewer cru. Bridge companion↔binário fica só no
+    // botão do header. Hide=ON é o modo opt-in onde o companion intercepta.
+    if (!this.getSettings().hideCompanions) return;
+
     const target = evt.target;
     if (!(target instanceof HTMLElement)) return;
     const item = target.closest('.nav-file-title');

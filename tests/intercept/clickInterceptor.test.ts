@@ -7,6 +7,7 @@ describe('ClickInterceptor', () => {
   let plugin: ReturnType<typeof createPlugin>;
   let registry: CompanionRegistry;
   let interceptor: ClickInterceptor;
+  let settings: { hideCompanions: boolean };
 
   afterEach(() => {
     plugin?.__unloadDomEvents();
@@ -21,7 +22,13 @@ describe('ClickInterceptor', () => {
     plugin.app.vault.__setFile('zz.png', undefined, 'binary');
     registry.initialize();
     await plugin.app.workspace.__triggerLayoutReady();
-    interceptor = new ClickInterceptor(plugin.app as any, registry, plugin as any);
+    settings = { hideCompanions: true };
+    interceptor = new ClickInterceptor(
+      plugin.app as any,
+      registry,
+      plugin as any,
+      () => settings,
+    );
     interceptor.initialize();
   });
 
@@ -33,6 +40,13 @@ describe('ClickInterceptor', () => {
 
   it('não intercepta click em binário sem companion', () => {
     const event = createExplorerClickEvent('zz.png');
+    document.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('não intercepta quando hideCompanions=false (navegação normal)', () => {
+    settings.hideCompanions = false;
+    const event = createExplorerClickEvent('paper.pdf');
     document.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
   });

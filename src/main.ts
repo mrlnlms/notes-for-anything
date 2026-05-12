@@ -37,11 +37,13 @@ export default class NotesForAnythingPlugin extends Plugin {
     this.lifecycle = new VaultLifecycleHandler(this.app, this.registry);
     this.lifecycle.initialize();
 
-    // Interceptors: click (primário) e active-leaf-change (fallback)
-    this.clickInterceptor = new ClickInterceptor(this.app, this.registry, this);
+    // Interceptors: click (primário) e active-leaf-change (fallback).
+    // Ambos respeitam `hideCompanions`: OFF significa "navegar normal" (sem intercept).
+    const getSettings = () => this.settings;
+    this.clickInterceptor = new ClickInterceptor(this.app, this.registry, this, getSettings);
     this.clickInterceptor.initialize();
 
-    this.viewSwapper = new ViewSwapper(this.app, this.registry);
+    this.viewSwapper = new ViewSwapper(this.app, this.registry, getSettings);
     this.viewSwapper.initialize();
 
     // Explorer decoration: underline + hide

@@ -15,6 +15,10 @@ export const swapBypass = new WeakSet<WorkspaceLeaf>();
  * click em wikilink em outra nota). Quando uma leaf abre um binário com companion,
  * substitui a abertura pelo companion .md (MarkdownView nativa).
  */
+interface SettingsGetter {
+  (): { hideCompanions: boolean };
+}
+
 export class ViewSwapper {
   private ref: EventRef | null = null;
   private swapping = new WeakSet<WorkspaceLeaf>();
@@ -22,6 +26,7 @@ export class ViewSwapper {
   constructor(
     private app: App,
     private registry: CompanionRegistry,
+    private getSettings: SettingsGetter,
   ) {}
 
   initialize(): void {
@@ -38,6 +43,10 @@ export class ViewSwapper {
   }
 
   private async maybeSwap(leaf: WorkspaceLeaf): Promise<void> {
+    // hide=OFF: navegação normal, sem swap. Wikilink/quick switcher/bookmark abrem
+    // o binário cru direto. User chega no companion via botão do header.
+    if (!this.getSettings().hideCompanions) return;
+
     const view = leaf.view;
     if (!(view instanceof FileView)) return;
     const file = view.file;

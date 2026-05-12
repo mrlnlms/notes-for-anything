@@ -93,16 +93,23 @@ The button updates dynamically when you switch tabs to a different binary or com
 
 Companions are hidden in the file explorer by default. Toggle in **Settings → Notes for Anything → Hide companions in file explorer**.
 
-To expose a specific companion individually, add `visible: true` to its frontmatter:
+This setting also governs **whether the plugin intercepts navigation**:
+
+- **Hide companions ON (default)** — companion `.md` files are hidden from the explorer, and clicking a binary opens the companion. All the navigation paths (table above) reroute to the companion.
+- **Hide companions OFF** — companion `.md` files appear in the explorer next to binaries. Clicking a binary opens the binary directly (no intercept). The bridge to the companion is only the header action button ("Open companion notes" in the binary viewer).
+
+The reasoning: if you've opted into seeing both files in the explorer, you've also opted into navigating them as plain files. The plugin doesn't get in the way.
+
+To expose a specific companion individually while keeping the global hide on, add `visible: true` to its frontmatter:
 
 ```yaml
 ---
-binary: "papers/important.pdf"
+binary: "[[papers/important.pdf]]"
 visible: true
 ---
 ```
 
-That companion will show in the explorer even when the global hide is on.
+That companion will show in the explorer even when the global hide is on. The `visible: true` override is independent of the intercept behavior — clicking the binary still routes to the companion as long as Hide companions is ON globally.
 
 ## Underline indicator
 
