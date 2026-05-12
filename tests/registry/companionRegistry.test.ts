@@ -88,6 +88,36 @@ describe('CompanionRegistry', () => {
     });
   });
 
+  describe('wikilink no binary: (formato graph-aware)', () => {
+    it('aceita wikilink com path completo', async () => {
+      plugin.app.vault.__setFile('papers/foo.pdf', undefined, 'binary');
+      plugin.app.vault.__setFile('papers/foo.pdf.md', { binary: '[[papers/foo.pdf]]' });
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      expect(registry.getCompanionFor('papers/foo.pdf')).toBe('papers/foo.pdf.md');
+      expect(registry.getBinaryFor('papers/foo.pdf.md')).toBe('papers/foo.pdf');
+    });
+
+    it('resolve wikilink por shortname via getFirstLinkpathDest', async () => {
+      plugin.app.vault.__setFile('papers/uniq.pdf', undefined, 'binary');
+      plugin.app.vault.__setFile('papers/uniq.pdf.md', { binary: '[[uniq.pdf]]' });
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      expect(registry.getCompanionFor('papers/uniq.pdf')).toBe('papers/uniq.pdf.md');
+    });
+
+    it('aceita path literal (back compat com companions antigos)', async () => {
+      plugin.app.vault.__setFile('legacy.pdf', undefined, 'binary');
+      plugin.app.vault.__setFile('legacy.pdf.md', { binary: 'legacy.pdf' });
+      registry.initialize();
+      await plugin.app.workspace.__triggerLayoutReady();
+
+      expect(registry.getCompanionFor('legacy.pdf')).toBe('legacy.pdf.md');
+    });
+  });
+
   describe('múltiplos companions pro mesmo binário (caso patológico)', () => {
     it('regra é um companion por binário — last writer wins, perdedor vira nota normal', async () => {
       // Cenário: user editou manualmente um .md random pra apontar pro mesmo binário

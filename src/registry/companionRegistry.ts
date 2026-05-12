@@ -1,6 +1,7 @@
 // src/registry/companionRegistry.ts
 import { App, EventRef, TFile } from 'obsidian';
 import { FM_KEY_BINARY, FM_KEY_VISIBLE } from '../constants';
+import { resolveBinaryReference } from '../utils/pathResolver';
 import type { RegistryMutationListener } from '../types';
 
 interface CompanionMeta {
@@ -112,9 +113,9 @@ export class CompanionRegistry {
       return;
     }
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
-    const binaryPath = fm[FM_KEY_BINARY];
+    const binaryPath = resolveBinaryReference(this.app, companionPath, fm[FM_KEY_BINARY]);
 
-    if (typeof binaryPath !== 'string') {
+    if (!binaryPath) {
       this.handleCompanionRemoved(companionPath);
       return;
     }

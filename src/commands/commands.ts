@@ -1,6 +1,10 @@
 // src/commands/commands.ts
 import { App, Notice, Plugin, TFile, Menu } from 'obsidian';
-import { isSupportedBinary, defaultCompanionPath } from '../utils/pathResolver';
+import {
+  isSupportedBinary,
+  defaultCompanionPath,
+  formatBinaryWikilink,
+} from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 import {
   CMD_ADD_COMPANION_NOTE,
@@ -88,11 +92,12 @@ async function addOrOpen(
         new Notice(`Template not found: ${templatePath}`);
       }
     }
-    // Template inicial: frontmatter com binary: + body do template (se houver) ou vazio.
-    // Pra abrir o binário, o user clica no botão "Open binary" no header da MarkdownView.
-    // Aspas no value preservam paths com whitespace múltiplo / chars especiais YAML.
-    const escapedPath = binaryFile.path.replace(/"/g, '\\"');
-    const initial = `---\n${FM_KEY_BINARY}: "${escapedPath}"\n---\n\n${body}`;
+    // Template inicial: frontmatter com binary: como wikilink (graph-aware).
+    // Aspas duplas no value são obrigatórias — sem aspas o YAML interpreta `[[...]]`
+    // como flow array aninhado. Wikilink permite ao Obsidian indexar a bridge
+    // companion→binário no graph e atualizar paths automaticamente em renames.
+    const wikilink = formatBinaryWikilink(binaryFile.path);
+    const initial = `---\n${FM_KEY_BINARY}: "${wikilink}"\n---\n\n${body}`;
     await app.vault.create(companionPath, initial);
   }
 

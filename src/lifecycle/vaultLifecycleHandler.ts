@@ -1,6 +1,6 @@
 import { App, EventRef, TFile, TAbstractFile } from 'obsidian';
 import { FM_KEY_BINARY } from '../constants';
-import { isSupportedBinary } from '../utils/pathResolver';
+import { isSupportedBinary, formatBinaryWikilink } from '../utils/pathResolver';
 import { CompanionRegistry } from '../registry/companionRegistry';
 
 export class VaultLifecycleHandler {
@@ -45,7 +45,13 @@ export class VaultLifecycleHandler {
       this.registry.beginWrite(companionPath);
       try {
         await this.app.fileManager.processFrontMatter(companionFile, (fm) => {
-          fm[FM_KEY_BINARY] = file.path;
+          // Preserva o formato existente: wikilink continua wikilink, literal continua literal.
+          // Obsidian normalmente atualiza wikilinks sozinho em renames internos quando
+          // "Auto-update internal links" está ON; aqui o re-write fica idempotente.
+          const current = fm[FM_KEY_BINARY];
+          const isWikilink =
+            typeof current === 'string' && /^\s*\[\[.+\]\]\s*$/.test(current);
+          fm[FM_KEY_BINARY] = isWikilink ? formatBinaryWikilink(file.path) : file.path;
         });
       } finally {
         this.registry.endWrite(companionPath);

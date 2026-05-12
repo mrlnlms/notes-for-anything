@@ -4,23 +4,37 @@ Reference for the behavior and conventions of Notes for Anything. The [README](.
 
 ## What a companion is
 
-A companion is a plain `.md` file with `binary: <path>` in its frontmatter:
+A companion is a plain `.md` file with `binary: <wikilink>` in its frontmatter:
 
 ```yaml
 ---
-binary: "papers/2024-attention-is-all-you-need.pdf"
+binary: "[[papers/2024-attention-is-all-you-need.pdf]]"
 ---
 ```
 
 The frontmatter is the **source of truth**. The companion can live anywhere in the vault, named anything. The plugin tracks the link via `metadataCache`, not via filename conventions.
 
+The wikilink format lets Obsidian's link graph index the companion→binary bridge: the binary's backlinks panel shows the companion, and Obsidian auto-updates the link on internal renames when **Auto-update internal links** is on. Shortname wikilinks (`[[paper.pdf]]`) are resolved via `getFirstLinkpathDest` — give a full path when the basename isn't unique in your vault.
+
 ### Path quoting
 
-The `binary:` value is always **double-quoted**. This preserves:
+The `binary:` value is always **double-quoted**. This is required: without quotes, YAML interprets `[[...]]` as a nested flow array and the value gets parsed as garbage. The quotes also preserve:
 - Multiple consecutive whitespace (e.g., `(2008) International  Handbook.pdf`)
 - YAML-significant characters (`:`, `#`, `&`, etc.)
 
-If you edit the frontmatter manually, keep the quotes.
+If you edit the frontmatter manually, keep both the quotes and the `[[...]]`.
+
+### Legacy path-literal format
+
+Companions created before the wikilink migration use a bare path string:
+
+```yaml
+---
+binary: "papers/foo.pdf"
+---
+```
+
+This format is still read correctly (back compat). Rename-binary updates preserve whichever format the companion currently uses. You can migrate manually by wrapping the path in `[[...]]`.
 
 ### Default location
 
